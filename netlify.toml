@@ -1,3 +1,9 @@
 [build]
   command = "npm install --legacy-peer-deps && npm run build"
   publish = "build"
+
+# ✅ Add this redirect rule below your build config
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
