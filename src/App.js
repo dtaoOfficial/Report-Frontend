@@ -2,18 +2,18 @@ import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { useAuth } from './context/AuthContext'; // ✅ Added for conditional bell rendering
+import { useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import { motion } from 'framer-motion';
 import 'react-toastify/dist/ReactToastify.css';
 import { SystemProfile, PrincipalProfile, DeanProfile, ResourceProfile } from './pages/common/RoleProfile';
-
 
 import SEOHelmet from './components/SEOHelmet';
 import ScrollToTop from './components/ScrollToTop';
 import Footer from './components/Footer';
 import IntroScreen from './components/IntroScreen';
 import NotificationBell from './components/NotificationBell';
+import useHealthPing from './hooks/useHealthPing'; // 🩺 keep Render backend alive
 
 const companyLoader = process.env.PUBLIC_URL + '/assets/companyLoader.webm';
 const NotFound = lazy(() => import('./pages/public/NotFound'));
@@ -53,7 +53,8 @@ const Loader = () => (
 );
 
 function AppContent() {
-  const { user } = useAuth(); // ✅ Check login status
+  const { user } = useAuth();
+  const isAuthenticated = user && (user.token || user.role);
 
   return (
     <motion.div
@@ -63,8 +64,7 @@ function AppContent() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* ✅ Show Notification Bell only if user is logged in */}
-      {user && (
+      {isAuthenticated && (
         <div className="fixed top-4 right-4 z-50">
           <NotificationBell />
         </div>
@@ -94,27 +94,25 @@ function AppContent() {
           <Route element={<ProtectedRoute allowedRoles={['SYSTEM']} />}>
             <Route path="/system/dashboard" element={<SystemDashboard />} />
             <Route path="/system/reports" element={<SystemReports />} />
-              <Route path="/system/profile" element={<SystemProfile />} />
-
+            <Route path="/system/profile" element={<SystemProfile />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['PRINCIPAL']} />}>
             <Route path="/principal/dashboard" element={<PrincipalDashboard />} />
             <Route path="/principal/reports" element={<PrincipalReports />} />
-              <Route path="/principal/profile" element={<PrincipalProfile />} /> 
+            <Route path="/principal/profile" element={<PrincipalProfile />} /> 
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['DEAN']} />}>
             <Route path="/dean/dashboard" element={<DeanDashboard />} />
             <Route path="/dean/reports" element={<DeanReports />} />
-              <Route path="/dean/profile" element={<DeanProfile />} /> 
+            <Route path="/dean/profile" element={<DeanProfile />} /> 
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['RESOURCES']} />}>
             <Route path="/resources/dashboard" element={<ResourceDashboard />} />
             <Route path="/resources/reports" element={<ResourceReports />} />
-  <Route path="/resources/profile" element={<ResourceProfile />} />
-
+            <Route path="/resources/profile" element={<ResourceProfile />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
@@ -128,6 +126,7 @@ function AppContent() {
 }
 
 function App() {
+  useHealthPing(3000); // 🩺 ping backend every 3s to prevent Render sleep
   const [introDone, setIntroDone] = useState(false);
 
   useEffect(() => {
