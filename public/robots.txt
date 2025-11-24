@@ -1,3 +1,22 @@
+# DTAO BASE Robots Configuration
 # https://www.robotstxt.org/robotstxt.html
+
 User-agent: *
-Disallow:
+Allow: /
+
+# Sitemap reference for crawlers
+Sitemap: https://yourdomain.com/sitemap.xml
+
+# Disallow sensitive areas
+Disallow: /login
+Disallow: /register
+Disallow: /admin
+Disallow: /system
+Disallow: /resources
+Disallow: /dean
+Disallow: /principal
+
+# Allow core public routes
+Allow: /
+Allow: /about
+Allow: /contact

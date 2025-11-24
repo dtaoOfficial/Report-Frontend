@@ -2,6 +2,7 @@
   text-align: center;
 }
 
+/* 🌌 Logo Spin Animation (if used in landing or loader) */
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -35,4 +36,31 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 🌐 Smooth Fade Animation for Page Transitions */
+.fade-enter {
+  opacity: 0;
+}
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 0.3s ease-in;
+}
+.fade-exit {
+  opacity: 1;
+}
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+/* 🌈 Global Animation Helpers */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+.float {
+  animation: float 3s ease-in-out infinite;
 }
