@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import axios from "axios";
 
 // 🧩 Replace this with your actual Render backend URL
-const HEALTH_URL = "https://your-render-app-name.onrender.com/api/health";
+const HEALTH_URL = "https://report-backend-1ud9.onrender.com/api/health";
 
 export default function useHealthPing(interval = 3000) { // ping every 3 seconds
   useEffect(() => {
