@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  FaUserCircle, FaSignOutAlt, FaBars, FaTimes,
-  FaCog, FaUsers, FaClipboardList
+ FaSignOutAlt, FaBars, FaTimes,
+  FaCog, FaUsers, FaClipboardList, FaChartPie
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/companyLogo.webp';
@@ -20,6 +20,7 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  // 🧠 Helper to determine paths
   const getDashboardPath = () => {
     if (user?.roles?.includes('ROLE_ADMIN')) return '/admin/dashboard';
     if (user?.roles?.includes('ROLE_SYSTEM')) return '/system/dashboard';
@@ -52,82 +53,68 @@ const Navbar = () => {
   const profilePath = getProfilePath();
   const reportPath = getReportPath();
 
-  const navLinkClass =
-    'text-gray-600 hover:text-[#16a34a] font-medium transition-colors cursor-pointer';
-  const mobileLinkClass =
-    'block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#16a34a] hover:bg-gray-50';
+  // 🎨 Active Link Logic
+  const isActive = (path) => location.pathname === path;
 
-  const linkVariants = {
-    hidden: { opacity: 0, y: -6 },
-    visible: { opacity: 1, y: 0 },
-  };
+  // 🧱 Styles
+  const navLinkBase = "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200";
+  const navLinkActive = "bg-[#16a34a]/10 text-[#16a34a]";
+  const navLinkInactive = "text-gray-500 hover:bg-gray-50 hover:text-gray-900";
+
+  const mobileLinkClass = "flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors";
 
   return (
     <motion.nav
-      className="bg-white/90 backdrop-blur-md border-b border-gray-200 fixed w-full z-50 top-0 shadow-sm"
-      initial={{ y: -60, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      className="bg-white/80 backdrop-blur-md border-b border-gray-200 fixed w-full z-50 top-0"
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      role="navigation"
-      aria-label="Main Navigation"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          {/* 🪐 LOGO */}
+        <div className="flex justify-between h-20 items-center">
+          
+          {/* 🪐 LOGO AREA */}
           <Link
             to={dashboardPath}
-            className="flex items-center gap-2 text-2xl font-bold text-[#16a34a]"
+            className="flex items-center gap-3 group"
             aria-label="Go to Dashboard"
           >
-            <motion.img
-              src={logo}
-              alt="Company Logo"
-              className="w-8 h-8 object-contain"
-              initial={{ rotate: -90, scale: 0, opacity: 0 }}
-              animate={{ rotate: 0, scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6, type: 'spring' }}
-            />
-            <motion.span
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-gray-800"
-            >
-              DTAO&nbsp;BASE
-            </motion.span>
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#16a34a]/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <img
+                src={logo}
+                alt="Company Logo"
+                className="w-10 h-10 object-contain relative z-10"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-gray-900 leading-none">
+                DTAO <span className="text-[#16a34a]">BASE</span>
+              </span>
+              <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mt-0.5">
+                System's & Network
+              </span>
+            </div>
           </Link>
 
-          {/* 💻 Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
+          {/* 💻 DESKTOP MENU */}
+          <div className="hidden md:flex items-center gap-2">
             {user && (
-              <motion.div
-                className="flex items-center gap-6"
-                variants={linkVariants}
-                initial="hidden"
-                animate="visible"
-                transition={{ staggerChildren: 0.08 }}
-              >
-                <span className="text-gray-900 font-semibold flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm">
-                  <FaUserCircle className="text-gray-400 text-lg" />
-                  {user.fullName || 'Unknown User'}
-                </span>
-
-                {/* ✅ Show bell only after login */}
-                <NotificationBell />
-
+              <>
                 <Link
                   to={dashboardPath}
-                  className={`${navLinkClass} ${location.pathname === dashboardPath ? 'text-[#16a34a]' : ''}`}
+                  className={`${navLinkBase} ${isActive(dashboardPath) ? navLinkActive : navLinkInactive}`}
                 >
+                  <FaChartPie size={16} />
                   Dashboard
                 </Link>
 
                 {reportPath && (
                   <Link
                     to={reportPath}
-                    className={`${navLinkClass} flex items-center gap-1 ${location.pathname === reportPath ? 'text-[#16a34a]' : ''}`}
+                    className={`${navLinkBase} ${isActive(reportPath) ? navLinkActive : navLinkInactive}`}
                   >
-                    <FaClipboardList size={14} />
+                    <FaClipboardList size={16} />
                     Reports
                   </Link>
                 )}
@@ -135,100 +122,135 @@ const Navbar = () => {
                 {user.roles.includes('ROLE_ADMIN') && (
                   <Link
                     to="/admin/manage-users"
-                    className={`${navLinkClass} flex items-center gap-1 ${location.pathname.includes('manage-users') ? 'text-[#16a34a]' : ''}`}
+                    className={`${navLinkBase} ${location.pathname.includes('manage-users') ? navLinkActive : navLinkInactive}`}
                   >
-                    <FaUsers className="inline mr-1" />
-                    Manage Users
+                    <FaUsers size={16} />
+                    Users
                   </Link>
                 )}
 
-                <Link
+                {/* Divider */}
+                <div className="h-6 w-px bg-gray-200 mx-2"></div>
+
+                {/* Notifications */}
+                <div className="mr-2">
+                   <NotificationBell />
+                </div>
+
+                {/* User Profile Dropdown Trigger (Simplified as a pill) */}
+                <Link 
                   to={profilePath}
-                  className={`${navLinkClass} flex items-center gap-1 ${location.pathname === profilePath ? 'text-[#16a34a]' : ''}`}
+                  className={`flex items-center gap-3 pl-1 pr-4 py-1 rounded-full border transition-all ${
+                    isActive(profilePath) 
+                      ? 'bg-gray-50 border-[#16a34a] ring-1 ring-[#16a34a]/20' 
+                      : 'bg-white border-gray-200 hover:border-gray-300'
+                  }`}
                 >
-                  <FaCog size={15} />
-                  Profile
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#16a34a] to-[#4ade80] flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs font-bold text-gray-700 leading-tight max-w-[100px] truncate">
+                      {user.fullName}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-medium leading-none">
+                       Profile
+                    </span>
+                  </div>
                 </Link>
 
-                <motion.button
+                <button
                   onClick={handleLogout}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
+                  className="p-2.5 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors ml-1"
                   title="Logout"
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.9 }}
                 >
-                  <FaSignOutAlt size={20} />
-                </motion.button>
-              </motion.div>
+                  <FaSignOutAlt size={18} />
+                </button>
+              </>
             )}
           </div>
 
-          {/* 📱 Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
-            {user && (
-              <motion.button
+          {/* 📱 MOBILE MENU BUTTON */}
+          <div className="md:hidden flex items-center gap-4">
+             {user && <NotificationBell />}
+             {user && (
+              <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-gray-600 hover:text-[#16a34a] focus:outline-none p-2"
-                aria-label="Toggle Menu"
-                whileTap={{ scale: 0.9 }}
+                className="text-gray-600 hover:text-[#16a34a] p-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none"
               >
                 {isMobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
-              </motion.button>
+              </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* 📲 Mobile Dropdown */}
+      {/* 📲 MOBILE DROPDOWN */}
       <AnimatePresence>
         {isMobileMenuOpen && user && (
           <motion.div
-            className="md:hidden bg-white border-t border-gray-100 shadow-lg absolute w-full left-0 origin-top"
+            className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100 absolute w-full left-0 shadow-2xl"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            <div className="px-4 pt-4 pb-6 space-y-2">
-              <div className="px-3 py-3 text-gray-900 font-bold bg-gray-50 rounded-lg mb-4 flex items-center gap-3">
-                <FaUserCircle className="text-[#16a34a] text-xl" />
-                <div>
-                  <p className="text-sm text-gray-500 font-normal">Signed in as</p>
-                  <p>{user.fullName}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {user.roles.join(', ').replace(/ROLE_/g, '')}
-                  </p>
-                </div>
+            <div className="p-4 space-y-1">
+              
+              {/* Mobile User Info */}
+              <div className="flex items-center gap-3 px-4 py-4 mb-2 bg-gray-50 rounded-2xl border border-gray-100">
+                 <div className="w-10 h-10 rounded-full bg-[#16a34a] flex items-center justify-center text-white font-bold">
+                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                 </div>
+                 <div>
+                    <p className="font-bold text-gray-800 text-sm">{user.fullName}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                 </div>
               </div>
 
-              <Link to={dashboardPath} className={mobileLinkClass} onClick={closeMenu}>
-                Dashboard
+              <Link 
+                to={dashboardPath} 
+                className={`${mobileLinkClass} ${isActive(dashboardPath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`} 
+                onClick={closeMenu}
+              >
+                <FaChartPie className="text-lg" /> Dashboard
               </Link>
 
               {reportPath && (
-                <Link to={reportPath} className={mobileLinkClass} onClick={closeMenu}>
-                  Reports
+                <Link 
+                  to={reportPath} 
+                  className={`${mobileLinkClass} ${isActive(reportPath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`} 
+                  onClick={closeMenu}
+                >
+                  <FaClipboardList className="text-lg" /> Reports
                 </Link>
               )}
 
               {user.roles.includes('ROLE_ADMIN') && (
-                <Link to="/admin/manage-users" className={mobileLinkClass} onClick={closeMenu}>
-                  Manage Users
+                <Link 
+                  to="/admin/manage-users" 
+                  className={`${mobileLinkClass} ${location.pathname.includes('manage-users') ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`} 
+                  onClick={closeMenu}
+                >
+                  <FaUsers className="text-lg" /> Manage Users
                 </Link>
               )}
 
-              <Link to={profilePath} className={mobileLinkClass} onClick={closeMenu}>
-                Profile
+              <Link 
+                to={profilePath} 
+                className={`${mobileLinkClass} ${isActive(profilePath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`} 
+                onClick={closeMenu}
+              >
+                <FaCog className="text-lg" /> Profile Settings
               </Link>
 
+              <div className="h-px bg-gray-100 my-2 mx-4"></div>
+
               <button
-                onClick={() => {
-                  handleLogout();
-                  closeMenu();
-                }}
-                className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
+                onClick={() => { handleLogout(); closeMenu(); }}
+                className={`${mobileLinkClass} w-full text-red-600 hover:bg-red-50`}
               >
-                Logout
+                <FaSignOutAlt className="text-lg" /> Logout
               </button>
             </div>
           </motion.div>

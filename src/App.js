@@ -1,21 +1,28 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom'; // ✅ Added useLocation
+import { AnimatePresence } from 'framer-motion'; // ✅ Added AnimatePresence
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
-import { motion } from 'framer-motion';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Common Pages
 import { SystemProfile, PrincipalProfile, DeanProfile, ResourceProfile } from './pages/common/RoleProfile';
 
+// Components
 import SEOHelmet from './components/SEOHelmet';
 import ScrollToTop from './components/ScrollToTop';
 import Footer from './components/Footer';
 import IntroScreen from './components/IntroScreen';
 import NotificationBell from './components/NotificationBell';
-import useHealthPing from './hooks/useHealthPing'; // 🩺 keep Render backend alive
+import PageTransition from './components/PageTransition'; // ✅ Import Transition Wrapper
+import useHealthPing from './hooks/useHealthPing'; 
 
+// Assets
 const companyLoader = process.env.PUBLIC_URL + '/assets/companyLoader.webm';
+
+// Lazy Load Pages
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const Login = lazy(() => import('./pages/public/Login'));
@@ -24,6 +31,8 @@ const ForgotPassword = lazy(() => import('./pages/public/ForgotPassword'));
 const VerifyResetOtp = lazy(() => import('./pages/public/VerifyResetOtp'));
 const ResetPassword = lazy(() => import('./pages/public/ResetPassword'));
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
+
+// Dashboards
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const UserDashboard = lazy(() => import('./pages/user/UserDashboard'));
 const UserProfile = lazy(() => import('./pages/user/UserProfile'));
@@ -33,6 +42,8 @@ const SystemDashboard = lazy(() => import('./pages/system/SystemDashboard'));
 const PrincipalDashboard = lazy(() => import('./pages/principal/PrincipalDashboard'));
 const DeanDashboard = lazy(() => import('./pages/dean/DeanDashboard'));
 const ResourceDashboard = lazy(() => import('./pages/resources/ResourceDashboard'));
+
+// Reports
 const UserReports = lazy(() => import('./pages/user/UserReports'));
 const SystemReports = lazy(() => import('./pages/system/SystemReports'));
 const PrincipalReports = lazy(() => import('./pages/principal/PrincipalReports'));
@@ -55,78 +66,90 @@ const Loader = () => (
 function AppContent() {
   const { user } = useAuth();
   const isAuthenticated = user && (user.token || user.role);
+  const location = useLocation(); // ✅ Get current route location
 
   return (
-    <motion.div
-      className="flex flex-col min-h-screen"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.4 }}
-    >
+    <div className="flex flex-col min-h-screen">
       {isAuthenticated && (
         <div className="fixed top-4 right-4 z-50">
           <NotificationBell />
         </div>
       )}
 
-      <main className="flex-grow">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/verify-reset-otp" element={<VerifyResetOtp />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+      {/* Main Content Area */}
+      <main className="flex-grow relative flex flex-col">
+        {/* ✅ AnimatePresence makes the exit animation work */}
+        <AnimatePresence mode="wait">
+          {/* ✅ Pass location to Routes so it knows when to swap */}
+          <Routes location={location} key={location.pathname}>
+            
+            {/* PUBLIC ROUTES */}
+            <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
+            <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+            <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+            <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
+            <Route path="/verify-reset-otp" element={<PageTransition><VerifyResetOtp /></PageTransition>} />
+            <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
 
-          <Route element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']} />}>
-            <Route path="/user/dashboard" element={<UserDashboard />} />
-            <Route path="/user/profile" element={<UserProfile />} />
-            <Route path="/user/reports" element={<UserReports />} />
-          </Route>
+            {/* PROTECTED ROUTES - Wrapped individually for smooth transitions */}
+            
+            {/* USER & ADMIN */}
+            <Route element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']} />}>
+              <Route path="/user/dashboard" element={<PageTransition><UserDashboard /></PageTransition>} />
+              <Route path="/user/profile" element={<PageTransition><UserProfile /></PageTransition>} />
+              <Route path="/user/reports" element={<PageTransition><UserReports /></PageTransition>} />
+            </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/profile" element={<AdminProfile />} />
-            <Route path="/admin/manage-users" element={<ManageUsers />} />
-          </Route>
+            {/* ADMIN ONLY */}
+            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+              <Route path="/admin/dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
+              <Route path="/admin/profile" element={<PageTransition><AdminProfile /></PageTransition>} />
+              <Route path="/admin/manage-users" element={<PageTransition><ManageUsers /></PageTransition>} />
+            </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['SYSTEM']} />}>
-            <Route path="/system/dashboard" element={<SystemDashboard />} />
-            <Route path="/system/reports" element={<SystemReports />} />
-            <Route path="/system/profile" element={<SystemProfile />} />
-          </Route>
+            {/* SYSTEM */}
+            <Route element={<ProtectedRoute allowedRoles={['SYSTEM']} />}>
+              <Route path="/system/dashboard" element={<PageTransition><SystemDashboard /></PageTransition>} />
+              <Route path="/system/reports" element={<PageTransition><SystemReports /></PageTransition>} />
+              <Route path="/system/profile" element={<PageTransition><SystemProfile /></PageTransition>} />
+            </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['PRINCIPAL']} />}>
-            <Route path="/principal/dashboard" element={<PrincipalDashboard />} />
-            <Route path="/principal/reports" element={<PrincipalReports />} />
-            <Route path="/principal/profile" element={<PrincipalProfile />} /> 
-          </Route>
+            {/* PRINCIPAL */}
+            <Route element={<ProtectedRoute allowedRoles={['PRINCIPAL']} />}>
+              <Route path="/principal/dashboard" element={<PageTransition><PrincipalDashboard /></PageTransition>} />
+              <Route path="/principal/reports" element={<PageTransition><PrincipalReports /></PageTransition>} />
+              <Route path="/principal/profile" element={<PageTransition><PrincipalProfile /></PageTransition>} /> 
+            </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['DEAN']} />}>
-            <Route path="/dean/dashboard" element={<DeanDashboard />} />
-            <Route path="/dean/reports" element={<DeanReports />} />
-            <Route path="/dean/profile" element={<DeanProfile />} /> 
-          </Route>
+            {/* DEAN */}
+            <Route element={<ProtectedRoute allowedRoles={['DEAN']} />}>
+              <Route path="/dean/dashboard" element={<PageTransition><DeanDashboard /></PageTransition>} />
+              <Route path="/dean/reports" element={<PageTransition><DeanReports /></PageTransition>} />
+              <Route path="/dean/profile" element={<PageTransition><DeanProfile /></PageTransition>} /> 
+            </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['RESOURCES']} />}>
-            <Route path="/resources/dashboard" element={<ResourceDashboard />} />
-            <Route path="/resources/reports" element={<ResourceReports />} />
-            <Route path="/resources/profile" element={<ResourceProfile />} />
-          </Route>
+            {/* RESOURCES */}
+            <Route element={<ProtectedRoute allowedRoles={['RESOURCES']} />}>
+              <Route path="/resources/dashboard" element={<PageTransition><ResourceDashboard /></PageTransition>} />
+              <Route path="/resources/reports" element={<PageTransition><ResourceReports /></PageTransition>} />
+              <Route path="/resources/profile" element={<PageTransition><ResourceProfile /></PageTransition>} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* 404 Page */}
+            <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+          
+          </Routes>
+        </AnimatePresence>
       </main>
 
       <Footer />
       <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar />
-    </motion.div>
+    </div>
   );
 }
 
 function App() {
-  useHealthPing(3000); // 🩺 ping backend every 3s to prevent Render sleep
+  useHealthPing(3000); // 🩺 Keep backend alive
   const [introDone, setIntroDone] = useState(false);
 
   useEffect(() => {

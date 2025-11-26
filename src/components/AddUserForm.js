@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import api from '../api/axiosConfig';
 import { toast } from 'react-toastify';
+import { 
+  FaUserPlus, 
+  FaUserEdit, 
+  FaTimes, 
+  FaBuilding, 
+  FaUserTag,
+  FaPaw
+} from 'react-icons/fa';
 
 const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
   const [formData, setFormData] = useState({
@@ -11,17 +20,18 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
     gender: 'MALE',
     animalName: '',
     role: 'ROLE_USER',
-    department: '', // 🏫 Added department field
+    department: '',
   });
 
-  // 🧠 Load user data if editing
+  const isEditMode = !!userToEdit;
+
   useEffect(() => {
     if (userToEdit) {
       setFormData({
         fullName: userToEdit.fullName || '',
         email: userToEdit.email || '',
         phoneNumber: userToEdit.phoneNumber || '',
-        password: '',
+        password: '', // Don't pre-fill password
         gender: userToEdit.gender || 'MALE',
         animalName: userToEdit.animalName || '',
         role: Array.from(userToEdit.roles || [])[0] || 'ROLE_USER',
@@ -30,13 +40,14 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
     }
   }, [userToEdit]);
 
+  // 🧠 Role Mapping: RESOURCES -> CHAIRMAN
   const roles = [
-    'ROLE_USER',
-    'ROLE_ADMIN',
-    'ROLE_SYSTEM',
-    'ROLE_PRINCIPAL',
-    'ROLE_DEAN',
-    'ROLE_RESOURCES',
+    { value: 'ROLE_USER', label: 'USER' },
+    { value: 'ROLE_ADMIN', label: 'ADMIN' },
+    { value: 'ROLE_SYSTEM', label: 'SYSTEM' },
+    { value: 'ROLE_PRINCIPAL', label: 'PRINCIPAL' },
+    { value: 'ROLE_DEAN', label: 'DEAN' },
+    { value: 'ROLE_RESOURCES', label: 'CHAIRMAN' }, // ✅ Renamed for UI
   ];
 
   const genders = ['MALE', 'FEMALE', 'GOD', 'ALIEN', 'ANIMAL'];
@@ -45,19 +56,14 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Handle submit (Add or Update)
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
-        ...formData,
-        roles: [formData.role],
-      };
+      const payload = { ...formData, roles: [formData.role] };
 
-      // 🚫 If not ROLE_USER, remove department before sending
-      if (formData.role !== 'ROLE_USER') {
-        delete payload.department;
-      }
+      // 🧹 Cleanup based on role
+      if (formData.role !== 'ROLE_USER') delete payload.department;
+      if (formData.gender !== 'ANIMAL') delete payload.animalName;
 
       if (userToEdit) {
         await api.put(`/admin/users/${userToEdit.id}`, payload);
@@ -75,123 +81,186 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
     }
   };
 
-  const isEditMode = !!userToEdit;
+  // 🧱 Styles
+  const inputGroupClass = "flex flex-col gap-1";
+  const labelClass = "text-xs font-bold text-gray-500 uppercase tracking-wide";
+  const inputClass = "w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#16a34a] focus:border-transparent outline-none transition-all text-sm bg-gray-50 focus:bg-white";
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 text-center">
-          {isEditMode ? 'Update User' : 'Add New User'}
-        </h2>
+    <motion.div 
+      className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[70] p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div 
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        
+        {/* 🟢 Modal Header */}
+        <div className={`p-6 flex justify-between items-center ${isEditMode ? 'bg-blue-600' : 'bg-[#16a34a]'}`}>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            {isEditMode ? <FaUserEdit /> : <FaUserPlus />}
+            {isEditMode ? 'Edit User Profile' : 'Create New User'}
+          </h2>
+          <button onClick={onClose} className="text-white/80 hover:text-white transition-colors">
+            <FaTimes size={20} />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            name="fullName"
-            value={formData.fullName}
-            placeholder="Full Name"
-            className="w-full p-3 border rounded"
-            required
-            onChange={handleChange}
-          />
-
-          <input
-            name="email"
-            value={formData.email}
-            placeholder="Email"
-            className="w-full p-3 border rounded"
-            required
-            onChange={handleChange}
-            disabled={isEditMode}
-          />
-
-          <input
-            name="phoneNumber"
-            value={formData.phoneNumber}
-            placeholder="Phone Number (optional)"
-            className="w-full p-3 border rounded"
-            onChange={handleChange}
-          />
-
-          {/* 🏫 Show Department only if Role = ROLE_USER */}
-          {formData.role === 'ROLE_USER' && (
-            <input
-              name="department"
-              value={formData.department}
-              placeholder="Department (e.g. CSE, ECE, MECH)"
-              className="w-full p-3 border rounded"
-              required
-              onChange={handleChange}
-            />
-          )}
-
-          <input
-            name="password"
-            value={formData.password}
-            placeholder={isEditMode ? 'New Password ' : 'Password'}
-            type="password"
-            className="w-full p-3 border rounded"
-            onChange={handleChange}
-          />
-
-          <select
-            name="role"
-            value={formData.role}
-            className="w-full p-3 border rounded"
-            onChange={handleChange}
-          >
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {r.replace('ROLE_', '')}
-              </option>
-            ))}
-          </select>
-
-          <select
-            name="gender"
-            value={formData.gender}
-            className="w-full p-3 border rounded"
-            onChange={handleChange}
-          >
-            {genders.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-
-          {formData.gender === 'ANIMAL' && (
-            <input
-              name="animalName"
-              value={formData.animalName}
-              placeholder="Animal Name"
-              className="w-full p-3 border rounded"
-              onChange={handleChange}
-            />
-          )}
-
-          <div className="flex justify-between mt-4">
-            <button
-              type="submit"
-              className={`${
-                isEditMode
-                  ? 'bg-blue-600 hover:bg-blue-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              } text-white px-4 py-2 rounded`}
-            >
-              {isEditMode ? 'Update' : 'Save'}
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
-            >
-              Cancel
-            </button>
+        {/* 📝 Form Content */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+          
+          {/* Row 1: Name & Email */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={inputGroupClass}>
+              <label className={labelClass}>Full Name</label>
+              <input
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="John Doe"
+                className={inputClass}
+                required
+              />
+            </div>
+            <div className={inputGroupClass}>
+              <label className={labelClass}>Email Address</label>
+              <input
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="john@example.com"
+                className={inputClass}
+                required
+                disabled={isEditMode}
+              />
+            </div>
           </div>
+
+          {/* Row 2: Role & Department */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={inputGroupClass}>
+              <label className={labelClass}>System Role</label>
+              <div className="relative">
+                <FaUserTag className="absolute left-3 top-3.5 text-gray-400" />
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className={`${inputClass} pl-10 appearance-none`}
+                >
+                  {roles.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Smart Department Field: Only shows for USER */}
+            {formData.role === 'ROLE_USER' && (
+              <div className={inputGroupClass}>
+                <label className={labelClass}>Department</label>
+                <div className="relative">
+                  <FaBuilding className="absolute left-3 top-3.5 text-gray-400" />
+                  <input
+                    name="department"
+                    value={formData.department}
+                    onChange={handleChange}
+                    placeholder="CSE, ECE, etc."
+                    className={`${inputClass} pl-10`}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Row 3: Phone & Password */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={inputGroupClass}>
+              <label className={labelClass}>Phone (Optional)</label>
+              <input
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="+91 9876543210"
+                className={inputClass}
+              />
+            </div>
+            <div className={inputGroupClass}>
+              <label className={labelClass}>{isEditMode ? 'New Password' : 'Password'}</label>
+              <input
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder={isEditMode ? 'Leave empty to keep current' : 'Secret123!'}
+                className={inputClass}
+                required={!isEditMode}
+              />
+            </div>
+          </div>
+
+          {/* Row 4: Gender & Animal (Fun Logic) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={inputGroupClass}>
+              <label className={labelClass}>Gender / Species</label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                {genders.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+
+            {formData.gender === 'ANIMAL' && (
+              <div className={inputGroupClass}>
+                <label className={labelClass}>Animal Name</label>
+                <div className="relative">
+                  <FaPaw className="absolute left-3 top-3.5 text-orange-400" />
+                  <input
+                    name="animalName"
+                    value={formData.animalName}
+                    onChange={handleChange}
+                    placeholder="Tiger, Lion..."
+                    className={`${inputClass} pl-10 border-orange-200 bg-orange-50 focus:ring-orange-400`}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
         </form>
-      </div>
-    </div>
+
+        {/* 🦶 Modal Footer */}
+        <div className="p-6 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+          <button 
+            onClick={onClose} 
+            className="px-5 py-2.5 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit}
+            className={`px-6 py-2.5 rounded-xl text-white font-bold shadow-lg transition-transform active:scale-95 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[#16a34a] hover:bg-[#15803d]'}`}
+          >
+            {isEditMode ? 'Update User' : 'Create User'}
+          </button>
+        </div>
+
+      </motion.div>
+    </motion.div>
   );
 };
 

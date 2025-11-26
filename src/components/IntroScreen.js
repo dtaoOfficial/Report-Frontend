@@ -8,10 +8,11 @@ const IntroScreen = ({ onFinish }) => {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
+    // Fallback timer in case video doesn't autoplay or is too short
     const timer = setTimeout(() => {
       setShow(false);
       if (onFinish) onFinish();
-    }, 3500); // slight delay for smooth fade
+    }, 4000); 
     return () => clearTimeout(timer);
   }, [onFinish]);
 
@@ -19,42 +20,50 @@ const IntroScreen = ({ onFinish }) => {
     <AnimatePresence>
       {show && (
         <motion.div
-          className="fixed inset-0 bg-white flex items-center justify-center z-[9999]"
+          className="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999]"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          transition={{ duration: 0.8, ease: 'easeInOut' }}
         >
-          {/* 🎥 Responsive Company Loader Video */}
-          <motion.video
-            src={companyLoader}
-            autoPlay
-            muted
-            playsInline
-            loop={false}
-            className="object-contain w-[500px] h-[500px] sm:w-[350px] sm:h-[350px] xs:w-[220px] xs:h-[220px]"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-            onEnded={() => {
-              setShow(false);
-              if (onFinish) onFinish();
-            }}
-          />
+          
+          {/* 🎥 Centered Video */}
+          <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">
+            <motion.video
+              src={companyLoader}
+              autoPlay
+              muted
+              playsInline
+              loop={false}
+              className="w-full h-full object-contain px-8"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              onEnded={() => {
+                setShow(false);
+                if (onFinish) onFinish();
+              }}
+            />
+          </div>
 
-          {/* 🪩 Brand Title */}
+          {/* 🪩 Brand Title (Matches new Theme) */}
           <motion.div
-            className="absolute bottom-14 text-center font-semibold tracking-wide"
+            className="absolute bottom-20 text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.3 }}
+            transition={{ delay: 1.5, duration: 0.8 }}
           >
-            <h1 className="text-4xl sm:text-3xl xs:text-2xl font-extrabold text-gray-800">
-              <span className="text-[#16a34a]">DTAO</span> BASE
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#0A3F2F]">
+              DTAO <span className="text-[#16a34a]">BASE</span>
             </h1>
-            <p className="text-gray-500 text-sm sm:text-xs mt-1">
-              Empowering Department Workflow
-            </p>
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <div className="h-[1px] w-8 bg-gray-300"></div>
+              <p className="text-gray-400 text-xs uppercase tracking-[0.2em] font-medium">
+                System's & Network
+              </p>
+              <div className="h-[1px] w-8 bg-gray-300"></div>
+            </div>
           </motion.div>
+
         </motion.div>
       )}
     </AnimatePresence>
