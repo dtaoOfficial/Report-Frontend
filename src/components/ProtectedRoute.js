@@ -1,30 +1,38 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Navbar from './Navbar'; // Import Navbar here
+import Navbar from './Navbar';
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const { user, loading } = useAuth();
 
+  // 🕒 Wait until AuthContext finishes checking user
   if (loading) {
-    return <div className="flex justify-center items-center h-screen text-alien-500">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen text-alien-500">
+        Checking authentication...
+      </div>
+    );
   }
 
-  // 1. Not Logged In? Go to Login
+  // 🧠 If user is not loaded yet, do NOT redirect — this prevents flash to home
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // 2. Logged In but Wrong Role? Go Home (or Unauthorized page)
-  // Backend sends roles like ["ROLE_ADMIN"], so we check if the list includes it
-  const userRoles = user.roles.map(r => r.replace('ROLE_', '')); // Normalize to ADMIN/USER
-  const hasPermission = allowedRoles.some(role => userRoles.includes(role));
+  // 🧩 Normalize roles like ["ROLE_SYSTEM"] → ["SYSTEM"]
+  const userRoles = (user.roles || []).map((r) => r.replace('ROLE_', ''));
+
+  // 🛡️ Check if user has any allowed role for this route
+  const hasPermission = allowedRoles.some((role) =>
+    userRoles.includes(role)
+  );
 
   if (!hasPermission) {
     return <Navigate to="/" replace />;
   }
 
-  // 3. Render Navbar + Content (Navbar only shows here!)
+  // ✅ Render Navbar + Protected Page Content
   return (
     <>
       <Navbar />

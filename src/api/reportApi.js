@@ -15,6 +15,11 @@ export const getReportsByStage = async (stage) => {
   return await api.get(`/reports/${stage}`);
 };
 
+// ✅ Fetch all reports (for all dashboards - latest first)
+export const getAllReports = async () => {
+  return await api.get('/reports/all');
+};
+
 // ✅ Forward to next stage
 export const forwardReport = async (id, nextStage, comments) => {
   return await api.put(`/reports/${id}/forward`, null, { params: { nextStage, comments } });

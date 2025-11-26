@@ -11,9 +11,10 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
     gender: 'MALE',
     animalName: '',
     role: 'ROLE_USER',
+    department: '', // 🏫 Added department field
   });
 
-  // 🧠 Load data if editing
+  // 🧠 Load user data if editing
   useEffect(() => {
     if (userToEdit) {
       setFormData({
@@ -24,6 +25,7 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
         gender: userToEdit.gender || 'MALE',
         animalName: userToEdit.animalName || '',
         role: Array.from(userToEdit.roles || [])[0] || 'ROLE_USER',
+        department: userToEdit.department || '',
       });
     }
   }, [userToEdit]);
@@ -34,7 +36,7 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
     'ROLE_SYSTEM',
     'ROLE_PRINCIPAL',
     'ROLE_DEAN',
-    'ROLE_RESOURCES'
+    'ROLE_RESOURCES',
   ];
 
   const genders = ['MALE', 'FEMALE', 'GOD', 'ALIEN', 'ANIMAL'];
@@ -43,21 +45,24 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Fixed handleSubmit — roles array support
+  // ✅ Handle submit (Add or Update)
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const payload = {
         ...formData,
-        roles: [formData.role], // ✅ backend expects Set<Role>
+        roles: [formData.role],
       };
 
+      // 🚫 If not ROLE_USER, remove department before sending
+      if (formData.role !== 'ROLE_USER') {
+        delete payload.department;
+      }
+
       if (userToEdit) {
-        // ✏️ Update existing user
         await api.put(`/admin/users/${userToEdit.id}`, payload);
         toast.success('User updated successfully!');
       } else {
-        // ➕ Add new user
         await api.post('/admin/users', payload);
         toast.success('User added successfully!');
       }
@@ -96,7 +101,7 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
             className="w-full p-3 border rounded"
             required
             onChange={handleChange}
-            disabled={isEditMode} // prevent changing email
+            disabled={isEditMode}
           />
 
           <input
@@ -107,10 +112,22 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
             onChange={handleChange}
           />
 
+          {/* 🏫 Show Department only if Role = ROLE_USER */}
+          {formData.role === 'ROLE_USER' && (
+            <input
+              name="department"
+              value={formData.department}
+              placeholder="Department (e.g. CSE, ECE, MECH)"
+              className="w-full p-3 border rounded"
+              required
+              onChange={handleChange}
+            />
+          )}
+
           <input
             name="password"
             value={formData.password}
-            placeholder={isEditMode ? 'New Password (optional)' : 'Password (optional)'}
+            placeholder={isEditMode ? 'New Password ' : 'Password'}
             type="password"
             className="w-full p-3 border rounded"
             onChange={handleChange}
@@ -122,8 +139,10 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
             className="w-full p-3 border rounded"
             onChange={handleChange}
           >
-            {roles.map(r => (
-              <option key={r} value={r}>{r.replace('ROLE_', '')}</option>
+            {roles.map((r) => (
+              <option key={r} value={r}>
+                {r.replace('ROLE_', '')}
+              </option>
             ))}
           </select>
 
@@ -133,8 +152,10 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
             className="w-full p-3 border rounded"
             onChange={handleChange}
           >
-            {genders.map(g => (
-              <option key={g} value={g}>{g}</option>
+            {genders.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
             ))}
           </select>
 
@@ -151,7 +172,11 @@ const AddUserForm = ({ onClose, onUserAdded, userToEdit }) => {
           <div className="flex justify-between mt-4">
             <button
               type="submit"
-              className={`${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded`}
+              className={`${
+                isEditMode
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-green-600 hover:bg-green-700'
+              } text-white px-4 py-2 rounded`}
             >
               {isEditMode ? 'Update' : 'Save'}
             </button>

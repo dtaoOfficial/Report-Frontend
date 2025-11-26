@@ -69,6 +69,7 @@ const ManageUsers = () => {
                 <th className="p-3 text-left">Email</th>
                 <th className="p-3 text-left">Role</th>
                 <th className="p-3 text-left">Gender</th>
+                <th className="p-3 text-left">Department</th> {/* 🏫 Added */}
                 <th className="p-3 text-left">Verified</th>
                 <th className="p-3 text-left">Created</th>
                 <th className="p-3 text-left">Actions</th>
@@ -76,13 +77,18 @@ const ManageUsers = () => {
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-t">
-                  <td className="p-3">{u.fullName}</td>
-                  <td className="p-3">{u.email}</td>
-                  <td className="p-3">{Array.from(u.roles || []).join(', ').replace(/ROLE_/g, '')}</td>
-                  <td className="p-3">{u.gender}</td>
+                <tr key={u.id} className="border-t hover:bg-gray-50">
+                  <td className="p-3 font-medium text-gray-800">{u.fullName}</td>
+                  <td className="p-3 text-gray-600">{u.email}</td>
+                  <td className="p-3 text-gray-700">
+                    {Array.from(u.roles || []).join(', ').replace(/ROLE_/g, '')}
+                  </td>
+                  <td className="p-3 text-gray-700">{u.gender}</td>
+                  <td className="p-3 text-gray-700">{u.department || 'General'}</td> {/* ✅ Show department */}
                   <td className="p-3">{u.verified ? '✅' : '❌'}</td>
-                  <td className="p-3">{u.createdAt ? new Date(u.createdAt).toLocaleString() : '-'}</td>
+                  <td className="p-3">
+                    {u.createdAt ? new Date(u.createdAt).toLocaleString() : '-'}
+                  </td>
                   <td className="p-3 flex gap-2">
                     <button
                       onClick={() => handleEdit(u)}
