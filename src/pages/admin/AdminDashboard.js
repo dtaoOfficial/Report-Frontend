@@ -60,11 +60,11 @@ const AdminDashboard = () => {
   // 🎨 Helper: Get Status Badge Styles
   const getStatusBadge = (status) => {
     switch (status) {
-      case "APPROVED": return "bg-green-100 text-green-700 border-green-200";
-      case "COMPLETED": return "bg-blue-100 text-blue-700 border-blue-200";
-      case "REJECTED": return "bg-red-50 text-red-600 border-red-200";
-      case "PENDING": return "bg-yellow-50 text-yellow-700 border-yellow-200";
-      default: return "bg-gray-100 text-gray-600";
+      case "APPROVED": return "bg-green-100 text-green-800 border-green-300";
+      case "COMPLETED": return "bg-blue-100 text-blue-800 border-blue-300";
+      case "REJECTED": return "bg-red-100 text-red-800 border-red-300";
+      case "PENDING": return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      default: return "bg-gray-100 text-gray-800 border-gray-300";
     }
   };
 
@@ -83,19 +83,19 @@ const AdminDashboard = () => {
 
   // 📊 Stat Cards Configuration
   const statCards = [
-    { label: "Total Reports", value: stats.total, color: "text-gray-600", bg: "bg-gray-50", icon: <FaChartPie />, filter: "ALL" },
-    { label: "Approved", value: stats.approved, color: "text-green-600", bg: "bg-green-50", icon: <FaCheckCircle />, filter: "APPROVED" },
-    { label: "Pending", value: stats.pending, color: "text-yellow-600", bg: "bg-yellow-50", icon: <FaClock />, filter: "PENDING" },
-    { label: "Rejected", value: stats.rejected, color: "text-red-600", bg: "bg-red-50", icon: <FaTimesCircle />, filter: "REJECTED" },
-    { label: "Completed", value: stats.completed, color: "text-blue-600", bg: "bg-blue-50", icon: <FaCheckDouble />, filter: "COMPLETED" },
+    { label: "Total Reports", value: stats.total, color: "text-gray-800", bg: "bg-gray-100", icon: <FaChartPie />, filter: "ALL" },
+    { label: "Approved", value: stats.approved, color: "text-green-800", bg: "bg-green-100", icon: <FaCheckCircle />, filter: "APPROVED" },
+    { label: "Pending", value: stats.pending, color: "text-yellow-800", bg: "bg-yellow-100", icon: <FaClock />, filter: "PENDING" },
+    { label: "Rejected", value: stats.rejected, color: "text-red-800", bg: "bg-red-100", icon: <FaTimesCircle />, filter: "REJECTED" },
+    { label: "Completed", value: stats.completed, color: "text-blue-800", bg: "bg-blue-100", icon: <FaCheckDouble />, filter: "COMPLETED" },
   ];
 
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F9F8F4]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-gray-200 border-t-[#16a34a] rounded-full animate-spin"></div>
-          <p className="text-gray-500 font-medium">Loading Dashboard...</p>
+          <div className="w-10 h-10 border-4 border-gray-300 border-t-[#16a34a] rounded-full animate-spin"></div>
+          <p className="text-gray-700 font-bold">Loading Dashboard...</p>
         </div>
       </div>
     );
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
       >
         <button
           onClick={() => setSelectedReport(null)}
-          className="mb-6 flex items-center gap-2 text-gray-500 hover:text-[#16a34a] transition-colors font-medium"
+          className="mb-6 flex items-center gap-2 text-gray-700 hover:text-[#16a34a] transition-colors font-bold"
         >
           <FaArrowLeft /> Back to Dashboard
         </button>
@@ -131,12 +131,12 @@ const AdminDashboard = () => {
         {/* 🧠 Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#0A3F2F]">System Overview</h1>
-            <p className="text-gray-500 mt-1">Real-time insights and report management.</p>
+            <h1 className="text-3xl font-extrabold text-[#0A3F2F]">System Overview</h1>
+            <p className="text-gray-700 font-medium mt-1">Real-time insights and report management.</p>
           </div>
           <div className="text-right hidden md:block">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Current Filter</p>
-            <p className="text-lg font-bold text-[#16a34a]">{selectedFilter}</p>
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Current Filter</p>
+            <p className="text-lg font-extrabold text-[#16a34a]">{selectedFilter}</p>
           </div>
         </div>
 
@@ -156,8 +156,8 @@ const AdminDashboard = () => {
               onClick={() => handleFilter(item.filter)}
               className={`cursor-pointer p-5 rounded-2xl border transition-all shadow-sm ${
                 selectedFilter === item.filter 
-                  ? "bg-white border-[#16a34a] ring-1 ring-[#16a34a] shadow-md" 
-                  : "bg-white border-gray-100 hover:border-gray-300"
+                  ? "bg-white border-[#16a34a] ring-2 ring-[#16a34a] shadow-md" 
+                  : "bg-white border-gray-200 hover:border-gray-400"
               }`}
             >
               <div className="flex items-center justify-between mb-3">
@@ -168,8 +168,8 @@ const AdminDashboard = () => {
                   <div className="w-2 h-2 rounded-full bg-[#16a34a]"></div>
                 )}
               </div>
-              <p className="text-gray-500 text-xs font-bold uppercase tracking-wide">{item.label}</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{item.value || 0}</p>
+              <p className="text-gray-700 text-xs font-bold uppercase tracking-wide">{item.label}</p>
+              <p className="text-2xl font-extrabold text-gray-900 mt-1">{item.value || 0}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -182,12 +182,12 @@ const AdminDashboard = () => {
           transition={{ delay: 0.3 }}
         >
           {/* Table Header */}
-          <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50">
+          <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-200 rounded-lg text-gray-600">
+              <div className="p-2 bg-gray-200 rounded-lg text-gray-700">
                 <FaFilter />
               </div>
-              <h2 className="text-lg font-bold text-gray-800">
+              <h2 className="text-lg font-bold text-gray-900">
                 {selectedFilter === "ALL" ? "All Reports" : `${selectedFilter} Reports`}
               </h2>
             </div>
@@ -195,7 +195,7 @@ const AdminDashboard = () => {
             {filteredReports.length > 8 && (
               <button
                 onClick={() => setShowAll(!showAll)}
-                className="text-sm font-semibold text-[#16a34a] hover:text-[#14532d] hover:bg-green-50 px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm font-bold text-[#16a34a] hover:text-[#14532d] hover:bg-green-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-green-200"
               >
                 {showAll ? "Show Less" : "View All"}
               </button>
@@ -205,15 +205,15 @@ const AdminDashboard = () => {
           {/* Table Content */}
           <div className="overflow-x-auto">
             {filteredReports.length === 0 ? (
-              <div className="p-12 text-center text-gray-400">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+              <div className="p-12 text-center text-gray-500">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl text-gray-400">
                   <FaSearch />
                 </div>
                 <p>No reports found for <strong>{selectedFilter}</strong>.</p>
               </div>
             ) : (
               <table className="min-w-full text-left">
-                <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold border-b border-gray-100">
+                <thead className="bg-gray-100 text-gray-800 text-xs uppercase tracking-wider font-bold border-b border-gray-200">
                   <tr>
                     <th className="p-5">Report Title</th>
                     <th className="p-5">Created By</th>
@@ -222,7 +222,7 @@ const AdminDashboard = () => {
                     <th className="p-5 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-200">
                   <AnimatePresence mode="wait">
                     {visibleReports.map((r) => (
                       <motion.tr
@@ -231,17 +231,17 @@ const AdminDashboard = () => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         whileHover={{ backgroundColor: "#f9fafb" }}
-                        className="group transition-colors"
+                        className="group transition-colors hover:bg-gray-50"
                       >
                         <td className="p-5">
-                          <p className="font-semibold text-gray-800">{r.title}</p>
-                          <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{r.description}</p>
+                          <p className="font-bold text-gray-900">{r.title}</p>
+                          <p className="text-xs text-gray-600 mt-1 truncate max-w-[200px] font-medium">{r.description}</p>
                         </td>
-                        <td className="p-5 text-sm text-gray-600 font-medium">
+                        <td className="p-5 text-sm text-gray-800 font-semibold">
                           {r.createdByName}
                         </td>
                         <td className="p-5">
-                          <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                          <span className="text-xs font-bold bg-gray-200 text-gray-800 px-2 py-1 rounded border border-gray-300">
                             {r.currentStage}
                           </span>
                         </td>
@@ -253,7 +253,7 @@ const AdminDashboard = () => {
                         <td className="p-5 text-right">
                           <button
                             onClick={() => setSelectedReport(r)}
-                            className="text-sm font-semibold text-[#16a34a] hover:text-[#0A3F2F] hover:underline"
+                            className="text-sm font-bold text-[#16a34a] hover:text-[#0A3F2F] hover:underline"
                           >
                             View Details
                           </button>
@@ -266,9 +266,9 @@ const AdminDashboard = () => {
             )}
           </div>
           
-          {/* Footer Gradient for "Show More" feel */}
+          {/* Footer Gradient */}
           {!showAll && filteredReports.length > 8 && (
-             <div className="h-2 bg-gradient-to-b from-gray-50 to-gray-100"></div>
+             <div className="h-4 bg-gradient-to-b from-transparent to-gray-100/50"></div>
           )}
         </motion.div>
       </div>

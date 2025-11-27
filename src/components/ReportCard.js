@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   forwardReport,
@@ -148,7 +149,7 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
   return (
     <>
       <motion.div
-        className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+        className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -159,16 +160,16 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
            <div className="relative z-10">
               <div className="flex items-start justify-between gap-4">
                  <div>
-                    <span className="bg-[#16a34a] text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">{liveReport.status}</span>
-                    <h2 className="text-2xl font-bold mt-2 leading-tight">{liveReport.title}</h2>
+                    <span className="bg-[#16a34a] text-xs font-bold px-2 py-1 rounded uppercase tracking-wider text-white shadow-sm">{liveReport.status}</span>
+                    <h2 className="text-2xl font-bold mt-2 leading-tight text-white">{liveReport.title}</h2>
                  </div>
                  {onBack && (
-                   <button onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors backdrop-blur-sm">
+                   <button onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors backdrop-blur-sm border border-white/10">
                      &larr; Back
                    </button>
                  )}
               </div>
-              <div className="flex flex-wrap gap-4 mt-4 text-sm text-green-100/80">
+              <div className="flex flex-wrap gap-4 mt-4 text-sm font-medium text-white/90">
                  <span className="flex items-center gap-1"><FaUser /> {liveReport.createdByName} ({liveReport.department || 'N/A'})</span>
                  <span className="flex items-center gap-1"><FaMapMarkerAlt /> {liveReport.location}</span>
                  <span className="flex items-center gap-1"><FaClock /> {formatDateTime(liveReport.createdAt)}</span>
@@ -179,8 +180,8 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
         <div className="p-6 sm:p-8">
            {/* 📄 Description */}
            <div className="mb-8">
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Report Details</h3>
-              <p className="text-gray-700 text-lg leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
+              <h3 className="text-sm font-bold text-black uppercase tracking-wider mb-2">Report Details</h3>
+              <p className="text-gray-900 text-lg leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-300 font-medium">
                  {liveReport.description}
               </p>
            </div>
@@ -199,35 +200,40 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
               )}
            </div>
 
-           {/* 📜 Timeline History (Modernized) */}
+           {/* 📜 Timeline History (High Contrast Update) */}
            {liveReport.history?.length > 0 && (
               <div className="mb-8">
-                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                 <h3 className="text-sm font-extrabold text-black uppercase tracking-wider mb-4 flex items-center gap-2">
                     <FaHistory /> Activity Log
                  </h3>
-                 <div className="relative pl-4 border-l-2 border-gray-100 space-y-6">
+                 <div className="relative pl-4 border-l-2 border-gray-300 space-y-6">
                     {liveReport.history.map((h, i) => (
                        <div key={i} className="relative">
                           {/* Timeline Dot */}
                           <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-white border-2 border-[#16a34a]"></div>
                           
-                          <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                             <div className="flex justify-between items-start mb-1">
-                                <span className="font-bold text-gray-800 text-sm">{h.byDepartment || 'System'} <span className="font-normal text-gray-500">({h.byName})</span></span>
-                                <span className="text-xs text-gray-400">{formatDateTime(h.timestamp)}</span>
+                          {/* Card */}
+                          <div className="bg-white p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow">
+                             <div className="flex justify-between items-start mb-2">
+                                <span className="font-extrabold text-black text-sm">
+                                   {h.byDepartment || 'System'} 
+                                   <span className="font-bold text-gray-800 ml-1">({h.byName})</span>
+                                </span>
+                                <span className="text-xs font-extrabold text-gray-900">{formatDateTime(h.timestamp)}</span>
                              </div>
-                             <p className="text-sm text-gray-600">
-                                <span className="font-semibold text-[#16a34a]">{h.action}</span> 
-                                {h.comments && <span className="text-gray-400 mx-1">-</span>}
+                             
+                             <div className="text-sm font-medium text-gray-900">
+                                <span className="font-bold text-[#16a34a]">{h.action}</span> 
+                                {h.comments && <span className="text-black font-bold mx-2">|</span>}
                                 {h.comments && (
                                    <button 
                                       onClick={() => { setViewCommentText(h.comments); setShowCommentView(true); }}
-                                      className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                                      className="text-blue-700 font-bold hover:underline inline-flex items-center gap-1"
                                    >
                                       View Note <FaCommentDots />
                                    </button>
                                 )}
-                             </p>
+                             </div>
                           </div>
                        </div>
                     ))}
@@ -237,12 +243,12 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
 
            {/* ⚡ Action Bar */}
            {!disableAllActions && (
-              <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-100">
+              <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-300">
                  {role !== 'RESOURCES' && (
                     <button
                        disabled={loading}
                        onClick={handleForward}
-                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl font-semibold shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2"
+                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2"
                     >
                        <FaPaperPlane /> Forward
                     </button>
@@ -251,7 +257,7 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
                  <button
                     disabled={loading}
                     onClick={() => setShowActionModal('approve')}
-                    className="flex-1 bg-[#16a34a] hover:bg-[#15803d] text-white py-3 px-4 rounded-xl font-semibold shadow-lg shadow-green-200 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 bg-[#16a34a] hover:bg-[#15803d] text-white py-3 px-4 rounded-xl font-bold shadow-lg shadow-green-200 transition-all flex items-center justify-center gap-2"
                  >
                     <FaCheck /> Approve
                  </button>
@@ -259,7 +265,7 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
                  <button
                     disabled={loading}
                     onClick={() => setShowActionModal('reject')}
-                    className="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                    className="flex-1 bg-white border-2 border-red-200 text-red-600 hover:bg-red-50 py-3 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
                  >
                     <FaTimes /> Reject
                  </button>
@@ -305,7 +311,7 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
         )}
       </AnimatePresence>
 
-      {/* ✅ FIXED: View Comment Modal */}
+      {/* View Comment Modal (Using Portal) */}
       <AnimatePresence>
         {showCommentView && (
           <CommentModal
@@ -318,110 +324,113 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
   );
 };
 
-/* 🧩 Modern Modal Component */
-const ModalCard = ({ title, radios, selected, setSelected, commentText, setCommentText, onClose, onConfirm, loading, isDestructive }) => (
-  <motion.div
-    className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[60] p-4"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    onClick={onClose}
-  >
+/* 🧩 Modal Components using Portals */
+const ModalCard = ({ title, radios, selected, setSelected, commentText, setCommentText, onClose, onConfirm, loading, isDestructive }) => {
+  return ReactDOM.createPortal(
     <motion.div
-      className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative"
-      initial={{ scale: 0.9, y: 20 }}
-      animate={{ scale: 1, y: 0 }}
-      exit={{ scale: 0.9, y: 20 }}
-      onClick={(e) => e.stopPropagation()}
+      className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[9999] p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
     >
-      <div className="bg-gray-50 p-5 border-b border-gray-100">
-         <h3 className="text-lg font-bold text-gray-800">{title}</h3>
-      </div>
-      
-      <div className="p-6 space-y-4">
-         {radios && (
-            <div className="grid grid-cols-3 gap-2">
-               {radios.map((r) => (
-                  <label key={r} className={`cursor-pointer text-center p-2 rounded-lg border text-sm font-bold transition-all ${selected === r ? 'bg-[#16a34a] text-white border-[#16a34a]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                     <input type="radio" value={r} checked={selected === r} onChange={(e) => setSelected(e.target.value)} className="hidden" />
-                     {r}
-                  </label>
-               ))}
-            </div>
-         )}
-         
-         <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Comments (Optional)</label>
-            <textarea
-               value={commentText}
-               onChange={(e) => setCommentText(e.target.value.slice(0, 300))}
-               rows={4}
-               placeholder="Add any notes regarding this action..."
-               className="w-full border border-gray-200 rounded-xl p-3 text-gray-700 focus:ring-2 focus:ring-[#16a34a] focus:outline-none resize-none bg-gray-50"
-            />
-         </div>
-      </div>
+      <motion.div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative"
+        initial={{ scale: 0.95, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-gray-100 p-5 border-b border-gray-300">
+           <h3 className="text-lg font-bold text-black">{title}</h3>
+        </div>
+        
+        <div className="p-6 space-y-4">
+           {radios && (
+              <div className="grid grid-cols-3 gap-2">
+                 {radios.map((r) => (
+                    <label key={r} className={`cursor-pointer text-center p-2 rounded-lg border-2 text-sm font-bold transition-all ${selected === r ? 'bg-[#16a34a] text-white border-[#16a34a]' : 'bg-white text-black border-gray-300 hover:bg-gray-100'}`}>
+                       <input type="radio" value={r} checked={selected === r} onChange={(e) => setSelected(e.target.value)} className="hidden" />
+                       {r}
+                    </label>
+                 ))}
+              </div>
+           )}
+           
+           <div>
+              <label className="block text-xs font-bold text-black uppercase mb-1">Comments (Optional)</label>
+              <textarea
+                 value={commentText}
+                 onChange={(e) => setCommentText(e.target.value.slice(0, 300))}
+                 rows={4}
+                 placeholder="Add notes..."
+                 className="w-full border-2 border-gray-300 rounded-xl p-3 text-black focus:ring-2 focus:ring-[#16a34a] focus:outline-none resize-none bg-white font-medium"
+              />
+           </div>
+        </div>
 
-      <div className="p-4 bg-gray-50 flex justify-end gap-3">
-         <button onClick={onClose} className="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
-         <button 
-            onClick={onConfirm} 
-            disabled={loading}
-            className={`px-6 py-2 text-white font-semibold rounded-lg shadow-lg transition-transform active:scale-95 ${isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-[#16a34a] hover:bg-[#15803d]'}`}
-         >
-            {loading ? 'Processing...' : 'Confirm Action'}
-         </button>
-      </div>
-    </motion.div>
-  </motion.div>
-);
+        <div className="p-4 bg-gray-100 flex justify-end gap-3 border-t border-gray-300">
+           <button onClick={onClose} className="px-4 py-2 text-black font-bold hover:bg-gray-200 rounded-lg transition-colors border border-gray-300">Cancel</button>
+           <button 
+              onClick={onConfirm} 
+              disabled={loading}
+              className={`px-6 py-2 text-white font-bold rounded-lg shadow-lg transition-transform active:scale-95 ${isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-[#16a34a] hover:bg-[#15803d]'}`}
+           >
+              {loading ? 'Processing...' : 'Confirm'}
+           </button>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  );
+};
 
-/* ✅ FIXED: Comment Modal with Better Positioning */
-const CommentModal = ({ comment, onClose }) => (
-  <motion.div
-    className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-hidden"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    onClick={onClose}
-  >
-    {/* Ensure this div is centered and doesn't overflow weirdly */}
+const CommentModal = ({ comment, onClose }) => {
+  return ReactDOM.createPortal(
     <motion.div
-      className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh] relative"
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.9, opacity: 0 }}
-      onClick={(e) => e.stopPropagation()}
+      className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md z-[9999] p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
     >
-      <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
-         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <FaCommentDots className="text-blue-500"/> Full Comment
-         </h3>
-         <button 
-            onClick={onClose} 
-            className="text-gray-400 hover:text-red-500 p-1 hover:bg-red-50 rounded-full transition-colors"
-         >
-            <FaTimes size={18} />
-         </button>
-      </div>
-      
-      {/* Scrollable Content Area */}
-      <div className="p-6 overflow-y-auto">
-         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-gray-700 leading-relaxed whitespace-pre-wrap font-medium text-sm">
-            {comment}
-         </div>
-      </div>
+      <motion.div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh] relative border border-gray-300"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-5 border-b border-gray-300 flex justify-between items-center bg-gray-100 rounded-t-2xl">
+           <h3 className="text-lg font-extrabold text-black flex items-center gap-2">
+              <FaCommentDots className="text-blue-700"/> Full Comment
+           </h3>
+           <button 
+              onClick={onClose} 
+              className="text-gray-500 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
+           >
+              <FaTimes size={20} />
+           </button>
+        </div>
+        
+        <div className="p-6 overflow-y-auto">
+           <div className="bg-white p-5 rounded-xl border-2 border-gray-200 text-black text-base font-bold leading-relaxed whitespace-pre-wrap shadow-sm">
+              {comment}
+           </div>
+        </div>
 
-      <div className="p-4 border-t border-gray-100 flex justify-end bg-white rounded-b-2xl">
-         <button
-            onClick={onClose}
-            className="px-5 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
-         >
-            Close
-         </button>
-      </div>
-    </motion.div>
-  </motion.div>
-);
+        <div className="p-4 border-t border-gray-300 flex justify-end bg-gray-100 rounded-b-2xl">
+           <button
+              onClick={onClose}
+              className="px-6 py-2 bg-black text-white font-bold rounded-lg hover:bg-gray-800 transition-colors"
+           >
+              Close Window
+           </button>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  );
+};
 
 export default ReportCard;

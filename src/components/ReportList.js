@@ -23,12 +23,11 @@ const ReportList = ({ role }) => {
 
   // 🧠 Fetch all reports
   const fetchReports = useCallback(async () => {
-    // setLoading(true); // Optional: Un-comment if you want loader on every refresh
     try {
       const res = await getAllReports();
       const data = res.data.data || [];
       setReports(data);
-      setFilteredReports(data); // Initialize filtered list
+      setFilteredReports(data); 
     } catch (err) {
       console.error(err);
       toast.error('Failed to fetch reports');
@@ -50,7 +49,7 @@ const ReportList = ({ role }) => {
       result = result.filter(r => r.status === statusFilter);
     }
 
-    // 2. Filter by Search Term (Title or Creator Name)
+    // 2. Filter by Search Term
     if (searchTerm.trim() !== "") {
       const term = searchTerm.toLowerCase();
       result = result.filter(r => 
@@ -72,11 +71,11 @@ const ReportList = ({ role }) => {
   // 🎨 Status Badge Helper
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'APPROVED': return 'bg-green-100 text-green-700 border-green-200';
-      case 'COMPLETED': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'REJECTED': return 'bg-red-50 text-red-600 border-red-200';
-      case 'PENDING': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'APPROVED': return 'bg-green-100 text-green-800 border-green-300';
+      case 'COMPLETED': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'REJECTED': return 'bg-red-100 text-red-800 border-red-300';
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -88,7 +87,7 @@ const ReportList = ({ role }) => {
       <div className="p-6 max-w-5xl mx-auto">
         <button 
           onClick={handleBack}
-          className="mb-6 flex items-center gap-2 text-gray-500 hover:text-[#16a34a] font-medium transition-colors"
+          className="mb-6 flex items-center gap-2 text-gray-700 hover:text-[#16a34a] font-bold transition-colors"
         >
           <FaArrowLeft /> Back to List
         </button>
@@ -99,7 +98,6 @@ const ReportList = ({ role }) => {
           onBack={handleBack}
           onActionComplete={async () => {
             await fetchReports();
-            // Logic to keep viewing report details if it still exists
             const updated = reports.find((r) => r.id === selectedReport.id);
             if (updated) setSelectedReport(updated); 
             else setSelectedReport(null);
@@ -118,34 +116,34 @@ const ReportList = ({ role }) => {
       {/* Header & Controls */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#0A3F2F] flex items-center gap-2">
+          <h1 className="text-2xl font-extrabold text-[#0A3F2F] flex items-center gap-2">
             Department Reports 
-            <span className="text-xs font-normal bg-gray-200 text-gray-600 px-2 py-1 rounded-full">{filteredReports.length}</span>
+            <span className="text-sm font-bold bg-gray-200 text-gray-800 px-2 py-1 rounded-full border border-gray-300">{filteredReports.length}</span>
           </h1>
-          <p className="text-gray-500 text-sm mt-1">Manage and track submissions across the system.</p>
+          <p className="text-gray-700 font-medium text-sm mt-1">Manage and track submissions across the system.</p>
         </div>
 
         <div className="flex flex-wrap gap-3 w-full md:w-auto">
           
           {/* Search Input */}
           <div className="relative group flex-1 md:flex-none">
-            <FaSearch className="absolute left-3 top-3 text-gray-400 group-focus-within:text-[#16a34a]" />
+            <FaSearch className="absolute left-3 top-3 text-gray-500 group-focus-within:text-[#16a34a]" />
             <input 
               type="text" 
               placeholder="Search..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2.5 w-full md:w-64 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#16a34a] focus:border-transparent outline-none transition-all text-sm"
+              className="pl-10 pr-4 py-2.5 w-full md:w-64 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#16a34a] focus:border-transparent outline-none transition-all text-sm font-medium text-gray-900 placeholder-gray-500"
             />
           </div>
 
           {/* Filter Dropdown */}
           <div className="relative flex-1 md:flex-none">
-            <FaFilter className="absolute left-3 top-3 text-gray-400" />
+            <FaFilter className="absolute left-3 top-3 text-gray-500" />
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="pl-10 pr-8 py-2.5 w-full md:w-48 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#16a34a] outline-none bg-white text-sm appearance-none cursor-pointer hover:border-gray-300"
+              className="pl-10 pr-8 py-2.5 w-full md:w-48 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#16a34a] outline-none bg-white text-sm font-bold text-gray-800 appearance-none cursor-pointer hover:border-gray-400"
             >
               <option value="ALL">All Status</option>
               <option value="PENDING">Pending</option>
@@ -158,7 +156,7 @@ const ReportList = ({ role }) => {
           {/* Refresh Button */}
           <button 
             onClick={() => { setLoading(true); fetchReports(); }}
-            className="p-2.5 bg-white border border-gray-200 text-gray-500 rounded-xl hover:text-[#16a34a] hover:border-[#16a34a] transition-colors"
+            className="p-2.5 bg-white border-2 border-gray-300 text-gray-600 rounded-xl hover:text-[#16a34a] hover:border-[#16a34a] transition-colors"
             title="Refresh Data"
           >
             <FaSyncAlt className={loading ? "animate-spin" : ""} />
@@ -169,15 +167,15 @@ const ReportList = ({ role }) => {
       {/* Table Container */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-gray-400">
-            <p>Loading reports...</p>
+          <div className="p-12 text-center text-gray-500">
+            <p className="font-bold">Loading reports...</p>
           </div>
         ) : filteredReports.length === 0 ? (
           <div className="p-16 text-center">
-            <p className="text-gray-400 text-lg">No reports matching your filters.</p>
+            <p className="text-gray-500 text-lg font-bold">No reports matching your filters.</p>
             <button 
               onClick={() => {setSearchTerm(""); setStatusFilter("ALL")}}
-              className="mt-4 text-[#16a34a] font-semibold text-sm hover:underline"
+              className="mt-4 text-[#16a34a] font-bold text-sm hover:underline"
             >
               Clear Filters
             </button>
@@ -185,17 +183,17 @@ const ReportList = ({ role }) => {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 border-b border-gray-100">
+              <thead className="bg-gray-100 border-b-2 border-gray-200">
                 <tr>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Created By</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Dept</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Current Stage</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
+                  <th className="p-4 text-xs font-extrabold text-black uppercase tracking-wider">Created By</th>
+                  <th className="p-4 text-xs font-extrabold text-black uppercase tracking-wider">Dept</th>
+                  <th className="p-4 text-xs font-extrabold text-black uppercase tracking-wider">Title</th>
+                  <th className="p-4 text-xs font-extrabold text-black uppercase tracking-wider">Current Stage</th>
+                  <th className="p-4 text-xs font-extrabold text-black uppercase tracking-wider">Status</th>
+                  <th className="p-4 text-xs font-extrabold text-black uppercase tracking-wider text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-200">
                 <AnimatePresence>
                   {filteredReports.map((report) => (
                     <motion.tr
@@ -205,34 +203,34 @@ const ReportList = ({ role }) => {
                       exit={{ opacity: 0 }}
                       whileHover={{ backgroundColor: "#f8fafc" }}
                       // ✨ Highlight rows waiting for THIS user's role
-                      className={`group transition-colors ${report.currentStage === role ? 'bg-green-50/30' : ''}`}
+                      className={`group transition-colors ${report.currentStage === role ? 'bg-green-50/50' : ''}`}
                     >
-                      <td className="p-4 text-sm font-medium text-gray-900">
+                      <td className="p-4 text-sm font-bold text-gray-900">
                         {report.createdByName || 'Unknown'}
                       </td>
-                      <td className="p-4 text-sm text-gray-500">
+                      <td className="p-4 text-sm font-semibold text-gray-700">
                         {report.department || 'N/A'}
                       </td>
-                      <td className="p-4 text-sm text-gray-700 font-medium max-w-xs truncate">
+                      <td className="p-4 text-sm font-bold text-gray-900 max-w-xs truncate">
                         {report.title}
                       </td>
                       <td className="p-4">
-                        <span className={`text-xs font-bold px-2 py-1 rounded bg-gray-100 text-gray-600 ${report.currentStage === role ? 'text-[#16a34a] bg-green-100' : ''}`}>
+                        <span className={`text-xs font-extrabold px-2 py-1 rounded border ${report.currentStage === role ? 'text-[#16a34a] bg-green-100 border-green-200' : 'text-gray-700 bg-gray-200 border-gray-300'}`}>
                           {report.currentStage || '-'}
                         </span>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wide ${getStatusBadge(report.status)}`}>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold border uppercase tracking-wide ${getStatusBadge(report.status)}`}>
                           {report.status}
                         </span>
                       </td>
                       <td className="p-4 text-right">
                         <button
                           onClick={() => setSelectedReport(report)}
-                          className="text-gray-400 hover:text-[#16a34a] transition-colors p-2 rounded-full hover:bg-green-50"
+                          className="text-gray-600 hover:text-[#16a34a] transition-colors p-2 rounded-full hover:bg-green-100"
                           title="View Details"
                         >
-                          <FaEye />
+                          <FaEye size={18} />
                         </button>
                       </td>
                     </motion.tr>
