@@ -1,14 +1,15 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom'; // ✅ Added useLocation
-import { AnimatePresence } from 'framer-motion'; // ✅ Added AnimatePresence
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { LiveUpdateProvider } from './context/LiveUpdateContext'; // ✅ NEW
 import { useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Common Pages
-import { SystemProfile, PrincipalProfile, DeanProfile, ResourceProfile } from './pages/common/RoleProfile';
+import { SystemProfile, PrincipalProfile } from './pages/common/RoleProfile';
 
 // Components
 import SEOHelmet from './components/SEOHelmet';
@@ -16,10 +17,9 @@ import ScrollToTop from './components/ScrollToTop';
 import Footer from './components/Footer';
 import IntroScreen from './components/IntroScreen';
 import NotificationBell from './components/NotificationBell';
-import PageTransition from './components/PageTransition'; // ✅ Import Transition Wrapper
-import useHealthPing from './hooks/useHealthPing'; 
+import PageTransition from './components/PageTransition';
+import useHealthPing from './hooks/useHealthPing';
 
-// Assets
 const companyLoader = process.env.PUBLIC_URL + '/assets/companyLoader.webm';
 
 // Lazy Load Pages
@@ -40,15 +40,12 @@ const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'));
 const ManageUsers = lazy(() => import('./pages/admin/ManageUsers'));
 const SystemDashboard = lazy(() => import('./pages/system/SystemDashboard'));
 const PrincipalDashboard = lazy(() => import('./pages/principal/PrincipalDashboard'));
-const DeanDashboard = lazy(() => import('./pages/dean/DeanDashboard'));
-const ResourceDashboard = lazy(() => import('./pages/resources/ResourceDashboard'));
 
 // Reports
 const UserReports = lazy(() => import('./pages/user/UserReports'));
 const SystemReports = lazy(() => import('./pages/system/SystemReports'));
+const SystemCompletedReports = lazy(() => import('./pages/system/SystemCompletedReports'));
 const PrincipalReports = lazy(() => import('./pages/principal/PrincipalReports'));
-const DeanReports = lazy(() => import('./pages/dean/DeanReports'));
-const ResourceReports = lazy(() => import('./pages/resources/ResourceReports'));
 
 const Loader = () => (
   <div className="flex items-center justify-center min-h-screen bg-white">
@@ -66,7 +63,7 @@ const Loader = () => (
 function AppContent() {
   const { user } = useAuth();
   const isAuthenticated = user && (user.token || user.role);
-  const location = useLocation(); // ✅ Get current route location
+  const location = useLocation();
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -76,14 +73,10 @@ function AppContent() {
         </div>
       )}
 
-      {/* Main Content Area */}
       <main className="flex-grow relative flex flex-col">
-        {/* ✅ AnimatePresence makes the exit animation work */}
         <AnimatePresence mode="wait">
-          {/* ✅ Pass location to Routes so it knows when to swap */}
           <Routes location={location} key={location.pathname}>
-            
-            {/* PUBLIC ROUTES */}
+            {/* 🌐 Public Routes */}
             <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
             <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
             <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
@@ -91,53 +84,37 @@ function AppContent() {
             <Route path="/verify-reset-otp" element={<PageTransition><VerifyResetOtp /></PageTransition>} />
             <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
 
-            {/* PROTECTED ROUTES - Wrapped individually for smooth transitions */}
-            
-            {/* USER & ADMIN */}
+            {/* 👤 User */}
             <Route element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']} />}>
               <Route path="/user/dashboard" element={<PageTransition><UserDashboard /></PageTransition>} />
               <Route path="/user/profile" element={<PageTransition><UserProfile /></PageTransition>} />
               <Route path="/user/reports" element={<PageTransition><UserReports /></PageTransition>} />
             </Route>
 
-            {/* ADMIN ONLY */}
+            {/* 🛠️ Admin */}
             <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
               <Route path="/admin/dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
               <Route path="/admin/profile" element={<PageTransition><AdminProfile /></PageTransition>} />
               <Route path="/admin/manage-users" element={<PageTransition><ManageUsers /></PageTransition>} />
             </Route>
 
-            {/* SYSTEM */}
+            {/* 💻 System Department */}
             <Route element={<ProtectedRoute allowedRoles={['SYSTEM']} />}>
               <Route path="/system/dashboard" element={<PageTransition><SystemDashboard /></PageTransition>} />
               <Route path="/system/reports" element={<PageTransition><SystemReports /></PageTransition>} />
+              <Route path="/system/completed" element={<PageTransition><SystemCompletedReports /></PageTransition>} />
               <Route path="/system/profile" element={<PageTransition><SystemProfile /></PageTransition>} />
             </Route>
 
-            {/* PRINCIPAL */}
+            {/* 🧑‍💼 Principal */}
             <Route element={<ProtectedRoute allowedRoles={['PRINCIPAL']} />}>
               <Route path="/principal/dashboard" element={<PageTransition><PrincipalDashboard /></PageTransition>} />
               <Route path="/principal/reports" element={<PageTransition><PrincipalReports /></PageTransition>} />
-              <Route path="/principal/profile" element={<PageTransition><PrincipalProfile /></PageTransition>} /> 
+              <Route path="/principal/profile" element={<PageTransition><PrincipalProfile /></PageTransition>} />
             </Route>
 
-            {/* DEAN */}
-            <Route element={<ProtectedRoute allowedRoles={['DEAN']} />}>
-              <Route path="/dean/dashboard" element={<PageTransition><DeanDashboard /></PageTransition>} />
-              <Route path="/dean/reports" element={<PageTransition><DeanReports /></PageTransition>} />
-              <Route path="/dean/profile" element={<PageTransition><DeanProfile /></PageTransition>} /> 
-            </Route>
-
-            {/* RESOURCES */}
-            <Route element={<ProtectedRoute allowedRoles={['RESOURCES']} />}>
-              <Route path="/resources/dashboard" element={<PageTransition><ResourceDashboard /></PageTransition>} />
-              <Route path="/resources/reports" element={<PageTransition><ResourceReports /></PageTransition>} />
-              <Route path="/resources/profile" element={<PageTransition><ResourceProfile /></PageTransition>} />
-            </Route>
-
-            {/* 404 Page */}
+            {/* 🚫 404 Page */}
             <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
-          
           </Routes>
         </AnimatePresence>
       </main>
@@ -149,7 +126,7 @@ function AppContent() {
 }
 
 function App() {
-  useHealthPing(3000); // 🩺 Keep backend alive
+  useHealthPing(3000);
   const [introDone, setIntroDone] = useState(false);
 
   useEffect(() => {
@@ -164,15 +141,17 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <ScrollToTop />
-        <SEOHelmet
-          title="DTAO BASE | Multi-Department Report Management"
-          description="A powerful workflow platform for managing and approving reports across departments in DTAO BASE."
-          keywords="DTAO, Report System, Workflow, Admin Dashboard, University Reports"
-        />
-        <Suspense fallback={<Loader />}>
-          <AppContent />
-        </Suspense>
+        <LiveUpdateProvider> {/* ✅ Real-time provider */}
+          <ScrollToTop />
+          <SEOHelmet
+            title="DTAO BASE | Report Management System"
+            description="Streamlined workflow automation for System and Principal roles in DTAO BASE."
+            keywords="DTAO, Report System, Workflow, Principal, System Department"
+          />
+          <Suspense fallback={<Loader />}>
+            <AppContent />
+          </Suspense>
+        </LiveUpdateProvider>
       </NotificationProvider>
     </AuthProvider>
   );

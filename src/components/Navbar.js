@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
- FaSignOutAlt, FaBars, FaTimes,
-  FaCog, FaUsers, FaClipboardList, FaChartPie
+  FaSignOutAlt, FaBars, FaTimes,
+  FaCog, FaUsers, FaClipboardList, FaChartPie, FaCheckCircle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/companyLogo.webp';
@@ -20,7 +20,7 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  // 🧠 Helper to determine paths
+  // 🧠 Helper paths
   const getDashboardPath = () => {
     if (user?.roles?.includes('ROLE_ADMIN')) return '/admin/dashboard';
     if (user?.roles?.includes('ROLE_SYSTEM')) return '/system/dashboard';
@@ -48,10 +48,17 @@ const Navbar = () => {
     return null;
   };
 
+  // ✅ Completed Reports Path (for System role)
+  const getCompletedPath = () => {
+    if (user?.roles?.includes('ROLE_SYSTEM')) return '/system/completed';
+    return null;
+  };
+
   const closeMenu = () => setIsMobileMenuOpen(false);
   const dashboardPath = getDashboardPath();
   const profilePath = getProfilePath();
   const reportPath = getReportPath();
+  const completedPath = getCompletedPath();
 
   // 🎨 Active Link Logic
   const isActive = (path) => location.pathname === path;
@@ -60,7 +67,6 @@ const Navbar = () => {
   const navLinkBase = "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200";
   const navLinkActive = "bg-[#16a34a]/10 text-[#16a34a]";
   const navLinkInactive = "text-gray-500 hover:bg-gray-50 hover:text-gray-900";
-
   const mobileLinkClass = "flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors";
 
   return (
@@ -73,19 +79,11 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           
-          {/* 🪐 LOGO AREA */}
-          <Link
-            to={dashboardPath}
-            className="flex items-center gap-3 group"
-            aria-label="Go to Dashboard"
-          >
+          {/* 🪐 LOGO */}
+          <Link to={dashboardPath} className="flex items-center gap-3 group">
             <div className="relative">
               <div className="absolute inset-0 bg-[#16a34a]/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <img
-                src={logo}
-                alt="Company Logo"
-                className="w-10 h-10 object-contain relative z-10"
-              />
+              <img src={logo} alt="Company Logo" className="w-10 h-10 object-contain relative z-10" />
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold text-gray-900 leading-none">
@@ -119,6 +117,17 @@ const Navbar = () => {
                   </Link>
                 )}
 
+                {/* ✅ Completed Reports (Only for SYSTEM role) */}
+                {user.roles.includes('ROLE_SYSTEM') && (
+                  <Link
+                    to={completedPath}
+                    className={`${navLinkBase} ${isActive(completedPath) ? navLinkActive : navLinkInactive}`}
+                  >
+                    <FaCheckCircle size={16} />
+                    Completed Reports
+                  </Link>
+                )}
+
                 {user.roles.includes('ROLE_ADMIN') && (
                   <Link
                     to="/admin/manage-users"
@@ -134,15 +143,15 @@ const Navbar = () => {
 
                 {/* Notifications */}
                 <div className="mr-2">
-                   <NotificationBell />
+                  <NotificationBell />
                 </div>
 
-                {/* User Profile Dropdown Trigger (Simplified as a pill) */}
-                <Link 
+                {/* Profile */}
+                <Link
                   to={profilePath}
                   className={`flex items-center gap-3 pl-1 pr-4 py-1 rounded-full border transition-all ${
-                    isActive(profilePath) 
-                      ? 'bg-gray-50 border-[#16a34a] ring-1 ring-[#16a34a]/20' 
+                    isActive(profilePath)
+                      ? 'bg-gray-50 border-[#16a34a] ring-1 ring-[#16a34a]/20'
                       : 'bg-white border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -154,7 +163,7 @@ const Navbar = () => {
                       {user.fullName}
                     </span>
                     <span className="text-[10px] text-gray-400 font-medium leading-none">
-                       Profile
+                      Profile
                     </span>
                   </div>
                 </Link>
@@ -172,8 +181,8 @@ const Navbar = () => {
 
           {/* 📱 MOBILE MENU BUTTON */}
           <div className="md:hidden flex items-center gap-4">
-             {user && <NotificationBell />}
-             {user && (
+            {user && <NotificationBell />}
+            {user && (
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="text-gray-600 hover:text-[#16a34a] p-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none"
@@ -185,7 +194,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* 📲 MOBILE DROPDOWN */}
+      {/* 📲 MOBILE MENU */}
       <AnimatePresence>
         {isMobileMenuOpen && user && (
           <motion.div
@@ -196,49 +205,49 @@ const Navbar = () => {
             transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
             <div className="p-4 space-y-1">
-              
-              {/* Mobile User Info */}
+              {/* User Info */}
               <div className="flex items-center gap-3 px-4 py-4 mb-2 bg-gray-50 rounded-2xl border border-gray-100">
-                 <div className="w-10 h-10 rounded-full bg-[#16a34a] flex items-center justify-center text-white font-bold">
-                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
-                 </div>
-                 <div>
-                    <p className="font-bold text-gray-800 text-sm">{user.fullName}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
-                 </div>
+                <div className="w-10 h-10 rounded-full bg-[#16a34a] flex items-center justify-center text-white font-bold">
+                  {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div>
+                  <p className="font-bold text-gray-800 text-sm">{user.fullName}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                </div>
               </div>
 
-              <Link 
-                to={dashboardPath} 
-                className={`${mobileLinkClass} ${isActive(dashboardPath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`} 
+              <Link
+                to={dashboardPath}
+                className={`${mobileLinkClass} ${isActive(dashboardPath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`}
                 onClick={closeMenu}
               >
                 <FaChartPie className="text-lg" /> Dashboard
               </Link>
 
               {reportPath && (
-                <Link 
-                  to={reportPath} 
-                  className={`${mobileLinkClass} ${isActive(reportPath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`} 
+                <Link
+                  to={reportPath}
+                  className={`${mobileLinkClass} ${isActive(reportPath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`}
                   onClick={closeMenu}
                 >
                   <FaClipboardList className="text-lg" /> Reports
                 </Link>
               )}
 
-              {user.roles.includes('ROLE_ADMIN') && (
-                <Link 
-                  to="/admin/manage-users" 
-                  className={`${mobileLinkClass} ${location.pathname.includes('manage-users') ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`} 
+              {/* ✅ Completed Reports Mobile */}
+              {user.roles.includes('ROLE_SYSTEM') && (
+                <Link
+                  to={completedPath}
+                  className={`${mobileLinkClass} ${isActive(completedPath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`}
                   onClick={closeMenu}
                 >
-                  <FaUsers className="text-lg" /> Manage Users
+                  <FaCheckCircle className="text-lg" /> Completed Reports
                 </Link>
               )}
 
-              <Link 
-                to={profilePath} 
-                className={`${mobileLinkClass} ${isActive(profilePath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`} 
+              <Link
+                to={profilePath}
+                className={`${mobileLinkClass} ${isActive(profilePath) ? 'bg-[#16a34a]/10 text-[#16a34a]' : 'text-gray-600'}`}
                 onClick={closeMenu}
               >
                 <FaCog className="text-lg" /> Profile Settings
@@ -247,7 +256,10 @@ const Navbar = () => {
               <div className="h-px bg-gray-100 my-2 mx-4"></div>
 
               <button
-                onClick={() => { handleLogout(); closeMenu(); }}
+                onClick={() => {
+                  handleLogout();
+                  closeMenu();
+                }}
                 className={`${mobileLinkClass} w-full text-red-600 hover:bg-red-50`}
               >
                 <FaSignOutAlt className="text-lg" /> Logout

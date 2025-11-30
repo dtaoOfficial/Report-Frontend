@@ -1,39 +1,63 @@
-import React, { useState } from 'react';
-import ReactDOM from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   forwardReport,
   approveReport,
   rejectReport,
-  completeReport,
+  closeReport,
   getReportById,
-} from '../api/reportApi';
-import { toast } from 'react-toastify';
-import ReportProgress from './ReportProgress';
-import LoaderSkeleton from './LoaderSkeleton';
-import { 
-  FaCheck, 
-  FaTimes, 
-  FaHistory, 
-  FaCommentDots, 
-  FaMapMarkerAlt, 
+} from "../api/reportApi";
+import { useLiveUpdate } from "../context/LiveUpdateContext";
+import { toast } from "react-toastify";
+import ReportProgress from "./ReportProgress";
+import LoaderSkeleton from "./LoaderSkeleton";
+import {
+  FaCheck,
+  FaTimes,
+  FaMapMarkerAlt,
   FaUser,
   FaClock,
-  FaPaperPlane
-} from 'react-icons/fa';
+  FaPaperPlane,
+  FaLock,
+  FaHistory,
+} from "react-icons/fa";
 
 const ReportCard = ({ report, role, onActionComplete, onBack }) => {
   const [loading, setLoading] = useState(false);
   const [liveReport, setLiveReport] = useState(report);
   const [refreshing, setRefreshing] = useState(false);
-  const [isForwarded, setIsForwarded] = useState(false);
-
-  const [showForwardModal, setShowForwardModal] = useState(false);
   const [showActionModal, setShowActionModal] = useState(null);
-  const [commentText, setCommentText] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
-  const [showCommentView, setShowCommentView] = useState(false);
-  const [viewCommentText, setViewCommentText] = useState('');
+  const [commentText, setCommentText] = useState("");
+
+  // ✅ Manage button states
+  const [actionState, setActionState] = useState({
+    approved: false,
+    rejected: false,
+    forwarded: false,
+  });
+
+  const { lastUpdate } = useLiveUpdate(); // ✅ WebSocket live data
+
+  // ✅ Real-time sync when backend pushes updated report
+  useEffect(() => {
+    if (!lastUpdate?.data) return;
+    const updated = lastUpdate.data;
+    const targetType = (lastUpdate.type || "").toLowerCase();
+
+    if (
+      updated?.id === liveReport.id &&
+      ["all", "system", "principal"].includes(targetType)
+    ) {
+      console.log("🔁 Live update received for report:", updated.id);
+      setLiveReport(updated);
+      toast.info(`🔄 "${updated.title}" was updated in real-time`, {
+        position: "bottom-right",
+        autoClose: 2000,
+        theme: "colored",
+      });
+    }
+  }, [lastUpdate, liveReport.id]);
 
   const refreshReport = async () => {
     try {
@@ -41,108 +65,67 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
       const res = await getReportById(liveReport.id);
       setLiveReport(res.data.data);
     } catch (err) {
-      console.error('Failed to refresh report', err);
+      console.error("❌ Failed to refresh report:", err);
     } finally {
       setRefreshing(false);
     }
   };
 
-  // 🧭 Action Handlers
-  const handleForward = () => {
-    if (role === 'PRINCIPAL') setShowForwardModal(true);
-    else setShowActionModal('forward');
-  };
-
-  const confirmForwardPrincipal = async () => {
-    if (!selectedRole) {
-      toast.info('Please select a department to forward.');
+  const handleAction = async (type) => {
+    if (!commentText.trim()) {
+      toast.info("Please add your comments before proceeding.");
       return;
     }
-    setLoading(true);
-    try {
-      const res = await forwardReport(liveReport.id, selectedRole, commentText.trim() || 'Forwarded');
-      if (res?.data?.success) {
-        toast.success('Report forwarded successfully!');
-        setIsForwarded(true);
-        await refreshReport();
-        await onActionComplete();
-      }
-    } catch (err) {
-      toast.error('Forward failed');
-    } finally {
-      setLoading(false);
-      setShowForwardModal(false);
-      setCommentText('');
-      setSelectedRole('');
-    }
-  };
 
-  const confirmForwardSimple = async () => {
-    setLoading(true);
-    try {
-      let nextStage;
-      if (role === 'SYSTEM') nextStage = 'PRINCIPAL';
-      else if (role === 'DEAN') nextStage = 'PRINCIPAL';
-      else if (role === 'PRINCIPAL') nextStage = 'RESOURCES';
-      else nextStage = 'RESOURCES';
-
-      const res = await forwardReport(liveReport.id, nextStage, commentText.trim() || 'Forwarded');
-      if (res?.data?.success) {
-        toast.success('Report forwarded successfully!');
-        setIsForwarded(true);
-        await refreshReport();
-        await onActionComplete();
-      }
-    } catch (err) {
-      toast.error('Forward failed');
-    } finally {
-      setLoading(false);
-      setShowActionModal(null);
-      setCommentText('');
-    }
-  };
-
-  const handleAction = async (type) => {
     setLoading(true);
     try {
       let res;
-      if (type === 'approve') {
-        res = await approveReport(liveReport.id, commentText.trim() || 'Approved');
-      } else if (type === 'reject') {
-        if (!commentText.trim()) {
-          toast.info('Please enter rejection reason.');
-          setLoading(false);
-          return;
-        }
+      if (type === "approve") {
+        res = await approveReport(liveReport.id, commentText.trim());
+        setActionState({ approved: true, rejected: false, forwarded: true });
+      } else if (type === "reject") {
         res = await rejectReport(liveReport.id, commentText.trim());
-      } else if (type === 'complete') {
-        res = await completeReport(liveReport.id, true, commentText.trim() || 'Marked complete');
+        setActionState({ approved: false, rejected: true, forwarded: true });
+      } else if (type === "forward") {
+        const nextStage = role === "SYSTEM" ? "PRINCIPAL" : "SYSTEM";
+        res = await forwardReport(liveReport.id, nextStage, commentText.trim());
+        setActionState((prev) => ({ ...prev, forwarded: true }));
+      } else if (type === "close") {
+        res = await closeReport(liveReport.id, commentText.trim());
       }
 
       if (res?.data?.success) {
         toast.success(res.data.message);
         await refreshReport();
-        await onActionComplete();
+        await onActionComplete?.();
       }
     } catch (err) {
-      toast.error('Action failed');
+      console.error(err);
+      toast.error("❌ Action failed. Please try again.");
     } finally {
       setLoading(false);
       setShowActionModal(null);
-      setCommentText('');
+      setCommentText("");
     }
   };
 
-  const disableAllActions =
-    ['REJECTED', 'COMPLETED', 'NOT_AVAILABLE'].includes(liveReport.status) ||
-    liveReport.currentStage !== role ||
-    isForwarded;
+  const canCloseReport =
+    role === "SYSTEM" &&
+    liveReport.status === "APPROVED" &&
+    liveReport.currentStage === "PRINCIPAL";
 
-  // 🎨 Helper for History Timeline
+  const disableAllActions = ["REJECTED", "COMPLETED"].includes(
+    liveReport.status
+  );
+
   const formatDateTime = (date) => {
     const d = new Date(date);
-    return d.toLocaleString('en-GB', {
-      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true
+    return d.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
@@ -154,169 +137,170 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        {/* 🟢 Header Banner */}
+        {/* Header */}
         <div className="bg-[#0A3F2F] p-6 text-white relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-           <div className="relative z-10">
-              <div className="flex items-start justify-between gap-4">
-                 <div>
-                    <span className="bg-[#16a34a] text-xs font-bold px-2 py-1 rounded uppercase tracking-wider text-white shadow-sm">{liveReport.status}</span>
-                    <h2 className="text-2xl font-bold mt-2 leading-tight text-white">{liveReport.title}</h2>
-                 </div>
-                 {onBack && (
-                   <button onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors backdrop-blur-sm border border-white/10">
-                     &larr; Back
-                   </button>
-                 )}
+          <div className="relative z-10">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="bg-[#16a34a] text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
+                  {liveReport.status}
+                </span>
+                <h2 className="text-2xl font-bold mt-2">{liveReport.title}</h2>
               </div>
-              <div className="flex flex-wrap gap-4 mt-4 text-sm font-medium text-white/90">
-                 <span className="flex items-center gap-1"><FaUser /> {liveReport.createdByName} ({liveReport.department || 'N/A'})</span>
-                 <span className="flex items-center gap-1"><FaMapMarkerAlt /> {liveReport.location}</span>
-                 <span className="flex items-center gap-1"><FaClock /> {formatDateTime(liveReport.createdAt)}</span>
-              </div>
-           </div>
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-bold border border-white/10"
+                >
+                  &larr; Back
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-4 mt-4 text-sm font-medium text-white/90">
+              <span className="flex items-center gap-1">
+                <FaUser /> {liveReport.createdByName}
+              </span>
+              <span className="flex items-center gap-1">
+                <FaMapMarkerAlt /> {liveReport.location}
+              </span>
+              <span className="flex items-center gap-1">
+                <FaClock /> {formatDateTime(liveReport.createdAt)}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="p-6 sm:p-8">
-           {/* 📄 Description */}
-           <div className="mb-8">
-              <h3 className="text-sm font-bold text-black uppercase tracking-wider mb-2">Report Details</h3>
-              <p className="text-gray-900 text-lg leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-300 font-medium">
-                 {liveReport.description}
-              </p>
-           </div>
+          {/* Description */}
+          <div className="mb-8">
+            <h3 className="text-sm font-bold uppercase mb-2">Report Details</h3>
+            <p className="text-gray-900 text-lg bg-gray-50 p-4 rounded-xl border border-gray-300">
+              {liveReport.description}
+            </p>
+          </div>
 
-           {/* 📊 Progress Bar */}
-           <div className="mb-8">
-              {refreshing ? (
-                 <LoaderSkeleton height="h-4" count={1} />
-              ) : (
-                 <ReportProgress
-                    currentStage={liveReport.currentStage}
-                    status={liveReport.status}
-                    rejected={liveReport.rejected}
-                    rejectionReason={liveReport.rejectionReason}
-                 />
-              )}
-           </div>
+          {/* Progress */}
+          <div className="mb-8">
+            {refreshing ? (
+              <LoaderSkeleton height="h-4" count={1} />
+            ) : (
+              <ReportProgress
+                currentStage={liveReport.currentStage}
+                status={liveReport.status}
+                rejected={liveReport.rejected}
+                rejectionReason={liveReport.rejectionReason}
+              />
+            )}
+          </div>
 
-           {/* 📜 Timeline History (High Contrast Update) */}
-           {liveReport.history?.length > 0 && (
-              <div className="mb-8">
-                 <h3 className="text-sm font-extrabold text-black uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <FaHistory /> Activity Log
-                 </h3>
-                 <div className="relative pl-4 border-l-2 border-gray-300 space-y-6">
-                    {liveReport.history.map((h, i) => (
-                       <div key={i} className="relative">
-                          {/* Timeline Dot */}
-                          <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-white border-2 border-[#16a34a]"></div>
-                          
-                          {/* Card */}
-                          <div className="bg-white p-4 rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow">
-                             <div className="flex justify-between items-start mb-2">
-                                <span className="font-extrabold text-black text-sm">
-                                   {h.byDepartment || 'System'} 
-                                   <span className="font-bold text-gray-800 ml-1">({h.byName})</span>
-                                </span>
-                                <span className="text-xs font-extrabold text-gray-900">{formatDateTime(h.timestamp)}</span>
-                             </div>
-                             
-                             <div className="text-sm font-medium text-gray-900">
-                                <span className="font-bold text-[#16a34a]">{h.action}</span> 
-                                {h.comments && <span className="text-black font-bold mx-2">|</span>}
-                                {h.comments && (
-                                   <button 
-                                      onClick={() => { setViewCommentText(h.comments); setShowCommentView(true); }}
-                                      className="text-blue-700 font-bold hover:underline inline-flex items-center gap-1"
-                                   >
-                                      View Note <FaCommentDots />
-                                   </button>
-                                )}
-                             </div>
-                          </div>
-                       </div>
-                    ))}
-                 </div>
+          {/* 📜 History */}
+          {liveReport.history?.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-sm font-extrabold text-black uppercase tracking-wider mb-4 flex items-center gap-2">
+                <FaHistory /> Activity Log
+              </h3>
+              <div className="relative pl-4 border-l-2 border-gray-300 space-y-5">
+                {liveReport.history.map((h, i) => (
+                  <HistoryItem key={i} entry={h} formatDateTime={formatDateTime} />
+                ))}
               </div>
-           )}
+            </div>
+          )}
 
-           {/* ⚡ Action Bar */}
-           {!disableAllActions && (
-              <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-300">
-                 {role !== 'RESOURCES' && (
+          {/* ⚙️ Action Buttons */}
+          {!disableAllActions && (
+            <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-300">
+              {/* SYSTEM */}
+              {role === "SYSTEM" && (
+                <>
+                  <button
+                    disabled={loading || actionState.forwarded}
+                    onClick={() => setShowActionModal("forward")}
+                    className={`flex-1 ${
+                      actionState.forwarded
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    } text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2`}
+                  >
+                    <FaPaperPlane /> Forward to Principal
+                  </button>
+
+                  {canCloseReport && (
                     <button
-                       disabled={loading}
-                       onClick={handleForward}
-                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2"
+                      disabled={loading}
+                      onClick={() => setShowActionModal("close")}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2"
                     >
-                       <FaPaperPlane /> Forward
+                      <FaLock /> End Report
                     </button>
-                 )}
-                 
-                 <button
-                    disabled={loading}
-                    onClick={() => setShowActionModal('approve')}
-                    className="flex-1 bg-[#16a34a] hover:bg-[#15803d] text-white py-3 px-4 rounded-xl font-bold shadow-lg shadow-green-200 transition-all flex items-center justify-center gap-2"
-                 >
-                    <FaCheck /> Approve
-                 </button>
+                  )}
+                </>
+              )}
 
-                 <button
-                    disabled={loading}
-                    onClick={() => setShowActionModal('reject')}
-                    className="flex-1 bg-white border-2 border-red-200 text-red-600 hover:bg-red-50 py-3 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-                 >
+              {/* PRINCIPAL */}
+              {role === "PRINCIPAL" && (
+                <>
+                  <button
+                    disabled={loading || actionState.forwarded}
+                    onClick={() => setShowActionModal("forward")}
+                    className={`flex-1 ${
+                      actionState.forwarded
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    } text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2`}
+                  >
+                    <FaPaperPlane /> Forward to System
+                  </button>
+
+                  <button
+                    disabled={loading || actionState.approved}
+                    onClick={() => setShowActionModal("approve")}
+                    className={`flex-1 ${
+                      actionState.approved
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700"
+                    } text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2`}
+                  >
+                    <FaCheck /> Approve
+                  </button>
+
+                  <button
+                    disabled={loading || actionState.approved}
+                    onClick={() => setShowActionModal("reject")}
+                    className={`flex-1 ${
+                      actionState.approved
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-white border-2 border-red-200 text-red-600 hover:bg-red-50"
+                    } py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2`}
+                  >
                     <FaTimes /> Reject
-                 </button>
-              </div>
-           )}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </motion.div>
 
-      {/* 📨 Modals */}
-      <AnimatePresence>
-        {showForwardModal && role === 'PRINCIPAL' && (
-          <ModalCard
-            title="Forward Report To"
-            radios={['SYSTEM', 'DEAN', 'RESOURCES']}
-            selected={selectedRole}
-            setSelected={setSelectedRole}
-            commentText={commentText}
-            setCommentText={setCommentText}
-            onClose={() => setShowForwardModal(false)}
-            onConfirm={confirmForwardPrincipal}
-            loading={loading}
-          />
-        )}
-      </AnimatePresence>
-
+      {/* Action Modal */}
       <AnimatePresence>
         {showActionModal && (
           <ModalCard
             title={
-              showActionModal === 'approve' ? 'Approve Report' : 
-              showActionModal === 'reject' ? 'Reject Report' : 'Forward Report'
+              showActionModal === "approve"
+                ? "Approve Report"
+                : showActionModal === "reject"
+                ? "Reject Report"
+                : showActionModal === "close"
+                ? "End Report"
+                : "Forward Report"
             }
             commentText={commentText}
             setCommentText={setCommentText}
             onClose={() => setShowActionModal(null)}
-            onConfirm={
-              showActionModal === 'approve' ? () => handleAction('approve') :
-              showActionModal === 'reject' ? () => handleAction('reject') : confirmForwardSimple
-            }
+            onConfirm={() => handleAction(showActionModal)}
             loading={loading}
-            isDestructive={showActionModal === 'reject'}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* View Comment Modal (Using Portal) */}
-      <AnimatePresence>
-        {showCommentView && (
-          <CommentModal
-            comment={viewCommentText}
-            onClose={() => setShowCommentView(false)}
+            isDestructive={showActionModal === "reject"}
           />
         )}
       </AnimatePresence>
@@ -324,8 +308,71 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
   );
 };
 
-/* 🧩 Modal Components using Portals */
-const ModalCard = ({ title, radios, selected, setSelected, commentText, setCommentText, onClose, onConfirm, loading, isDestructive }) => {
+/* 🧩 HistoryItem Component */
+const HistoryItem = ({ entry, formatDateTime }) => {
+  const [expanded, setExpanded] = useState(false);
+  const MAX_LEN = 120;
+  const text = entry.comments || "";
+  const isLong = text.length > MAX_LEN;
+
+  const getReadableMessage = () => {
+    const action = entry.action?.toUpperCase() || "";
+    switch (action) {
+      case "CREATED":
+        return `${entry.byName} created the report`;
+      case "FORWARDED":
+        return `${entry.byName} forwarded to ${entry.toDepartment || "next stage"}`;
+      case "APPROVED":
+        return `${entry.byName} approved the report`;
+      case "REJECTED":
+        return `${entry.byName} rejected the report`;
+      case "COMPLETED":
+        return `${entry.byName} completed the report`;
+      default:
+        return `${entry.byName} performed ${action}`;
+    }
+  };
+
+  return (
+    <div className="relative">
+      <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-white border-2 border-[#16a34a]" />
+      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex justify-between items-start mb-1">
+          <span className="font-bold text-sm text-gray-800">
+            {getReadableMessage()}
+          </span>
+          <span className="text-xs text-gray-500">
+            {formatDateTime(entry.timestamp)}
+          </span>
+        </div>
+        {text && (
+          <p className="text-sm text-gray-800 mt-1 leading-relaxed">
+            {expanded ? text : `${text.slice(0, MAX_LEN)}${isLong ? "..." : ""}`}
+            {isLong && (
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="ml-2 text-blue-600 font-bold hover:underline"
+              >
+                {expanded ? "Show less" : "Show more"}
+              </button>
+            )}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ✅ Modal Component */
+const ModalCard = ({
+  title,
+  commentText,
+  setCommentText,
+  onClose,
+  onConfirm,
+  loading,
+  isDestructive,
+}) => {
   return ReactDOM.createPortal(
     <motion.div
       className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[9999] p-4"
@@ -335,97 +382,45 @@ const ModalCard = ({ title, radios, selected, setSelected, commentText, setComme
       onClick={onClose}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative"
-        initial={{ scale: 0.95, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 20 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        initial={{ scale: 0.95 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-gray-100 p-5 border-b border-gray-300">
-           <h3 className="text-lg font-bold text-black">{title}</h3>
+          <h3 className="text-lg font-bold text-black">{title}</h3>
         </div>
-        
         <div className="p-6 space-y-4">
-           {radios && (
-              <div className="grid grid-cols-3 gap-2">
-                 {radios.map((r) => (
-                    <label key={r} className={`cursor-pointer text-center p-2 rounded-lg border-2 text-sm font-bold transition-all ${selected === r ? 'bg-[#16a34a] text-white border-[#16a34a]' : 'bg-white text-black border-gray-300 hover:bg-gray-100'}`}>
-                       <input type="radio" value={r} checked={selected === r} onChange={(e) => setSelected(e.target.value)} className="hidden" />
-                       {r}
-                    </label>
-                 ))}
-              </div>
-           )}
-           
-           <div>
-              <label className="block text-xs font-bold text-black uppercase mb-1">Comments (Optional)</label>
-              <textarea
-                 value={commentText}
-                 onChange={(e) => setCommentText(e.target.value.slice(0, 300))}
-                 rows={4}
-                 placeholder="Add notes..."
-                 className="w-full border-2 border-gray-300 rounded-xl p-3 text-black focus:ring-2 focus:ring-[#16a34a] focus:outline-none resize-none bg-white font-medium"
-              />
-           </div>
+          <label className="block text-xs font-bold uppercase mb-1">
+            Comments
+          </label>
+          <textarea
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value.slice(0, 500))}
+            rows={4}
+            placeholder="Write your comments (required)"
+            className="w-full border-2 border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-[#16a34a] outline-none resize-none"
+          />
         </div>
-
         <div className="p-4 bg-gray-100 flex justify-end gap-3 border-t border-gray-300">
-           <button onClick={onClose} className="px-4 py-2 text-black font-bold hover:bg-gray-200 rounded-lg transition-colors border border-gray-300">Cancel</button>
-           <button 
-              onClick={onConfirm} 
-              disabled={loading}
-              className={`px-6 py-2 text-white font-bold rounded-lg shadow-lg transition-transform active:scale-95 ${isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-[#16a34a] hover:bg-[#15803d]'}`}
-           >
-              {loading ? 'Processing...' : 'Confirm'}
-           </button>
-        </div>
-      </motion.div>
-    </motion.div>,
-    document.body
-  );
-};
-
-const CommentModal = ({ comment, onClose }) => {
-  return ReactDOM.createPortal(
-    <motion.div
-      className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md z-[9999] p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
-      <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh] relative border border-gray-300"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-5 border-b border-gray-300 flex justify-between items-center bg-gray-100 rounded-t-2xl">
-           <h3 className="text-lg font-extrabold text-black flex items-center gap-2">
-              <FaCommentDots className="text-blue-700"/> Full Comment
-           </h3>
-           <button 
-              onClick={onClose} 
-              className="text-gray-500 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
-           >
-              <FaTimes size={20} />
-           </button>
-        </div>
-        
-        <div className="p-6 overflow-y-auto">
-           <div className="bg-white p-5 rounded-xl border-2 border-gray-200 text-black text-base font-bold leading-relaxed whitespace-pre-wrap shadow-sm">
-              {comment}
-           </div>
-        </div>
-
-        <div className="p-4 border-t border-gray-300 flex justify-end bg-gray-100 rounded-b-2xl">
-           <button
-              onClick={onClose}
-              className="px-6 py-2 bg-black text-white font-bold rounded-lg hover:bg-gray-800 transition-colors"
-           >
-              Close Window
-           </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-black font-bold hover:bg-gray-200 rounded-lg border border-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className={`px-6 py-2 text-white font-bold rounded-lg shadow-lg ${
+              isDestructive
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-[#16a34a] hover:bg-[#15803d]"
+            }`}
+          >
+            {loading ? "Processing..." : "Confirm"}
+          </button>
         </div>
       </motion.div>
     </motion.div>,
