@@ -29,31 +29,31 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [showActionModal, setShowActionModal] = useState(null);
   const [commentText, setCommentText] = useState("");
-
-  // ✅ Manage button states
   const [actionState, setActionState] = useState({
     approved: false,
     rejected: false,
     forwarded: false,
   });
 
-  const { lastUpdate } = useLiveUpdate(); // ✅ WebSocket live data
+  const { lastUpdate } = useLiveUpdate();
 
-  // ✅ Real-time sync when backend pushes updated report
+  // ✅ Live update for all roles (user, principal, system)
   useEffect(() => {
     if (!lastUpdate?.data) return;
     const updated = lastUpdate.data;
-    const targetType = (lastUpdate.type || "").toLowerCase();
+    const topicType = (lastUpdate.type || "").toLowerCase();
 
-    if (
-      updated?.id === liveReport.id &&
-      ["all", "system", "principal"].includes(targetType)
-    ) {
-      console.log("🔁 Live update received for report:", updated.id);
+    if (updated?.id === liveReport.id) {
+      console.log("🔁 Live update received for report:", updated.id, topicType);
       setLiveReport(updated);
-      toast.info(`🔄 "${updated.title}" was updated in real-time`, {
+      setActionState({
+        approved: false,
+        rejected: false,
+        forwarded: false,
+      });
+      toast.info(`📡 "${updated.title}" updated in real-time`, {
         position: "bottom-right",
-        autoClose: 2000,
+        autoClose: 1500,
         theme: "colored",
       });
     }
@@ -64,6 +64,11 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
       setRefreshing(true);
       const res = await getReportById(liveReport.id);
       setLiveReport(res.data.data);
+      setActionState({
+        approved: false,
+        rejected: false,
+        forwarded: false,
+      });
     } catch (err) {
       console.error("❌ Failed to refresh report:", err);
     } finally {
@@ -97,7 +102,7 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
       if (res?.data?.success) {
         toast.success(res.data.message);
         await refreshReport();
-        await onActionComplete?.();
+        onActionComplete?.();
       }
     } catch (err) {
       console.error(err);
@@ -193,7 +198,7 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
             )}
           </div>
 
-          {/* 📜 History */}
+          {/* History */}
           {liveReport.history?.length > 0 && (
             <div className="mb-8">
               <h3 className="text-sm font-extrabold text-black uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -207,7 +212,7 @@ const ReportCard = ({ report, role, onActionComplete, onBack }) => {
             </div>
           )}
 
-          {/* ⚙️ Action Buttons */}
+          {/* Action Buttons */}
           {!disableAllActions && (
             <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-300">
               {/* SYSTEM */}
@@ -317,19 +322,20 @@ const HistoryItem = ({ entry, formatDateTime }) => {
 
   const getReadableMessage = () => {
     const action = entry.action?.toUpperCase() || "";
+    const role = entry.byRole ? ` (${entry.byRole.replace("ROLE_", "")})` : "";
     switch (action) {
       case "CREATED":
-        return `${entry.byName} created the report`;
+        return `${entry.byName}${role} created the report`;
       case "FORWARDED":
-        return `${entry.byName} forwarded to ${entry.toDepartment || "next stage"}`;
+        return `${entry.byName}${role} forwarded to ${entry.toDepartment || "next stage"}`;
       case "APPROVED":
-        return `${entry.byName} approved the report`;
+        return `${entry.byName}${role} approved the report`;
       case "REJECTED":
-        return `${entry.byName} rejected the report`;
+        return `${entry.byName}${role} rejected the report`;
       case "COMPLETED":
-        return `${entry.byName} completed the report`;
+        return `${entry.byName}${role} completed the report`;
       default:
-        return `${entry.byName} performed ${action}`;
+        return `${entry.byName}${role} performed ${action}`;
     }
   };
 

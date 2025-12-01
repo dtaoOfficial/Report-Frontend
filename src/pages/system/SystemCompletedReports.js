@@ -1,8 +1,15 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { getCompletedReports } from "../../api/reportApi";
 import { useLiveUpdate } from "../../context/LiveUpdateContext";
 import { motion } from "framer-motion";
-import { FaClipboardList, FaDownload, FaHistory } from "react-icons/fa";
+import {
+  FaClipboardList,
+  FaDownload,
+  FaHistory,
+  FaSearch,
+  FaFilter,
+  FaSortAmountDownAlt,
+} from "react-icons/fa";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import LoaderSkeleton from "../../components/LoaderSkeleton";
@@ -11,15 +18,25 @@ import logo from "../../assets/collegeLogo.webp";
 
 const SystemCompletedReports = () => {
   const [reports, setReports] = useState([]);
+  const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
-  const { lastUpdate } = useLiveUpdate(); // ✅ WebSocket listener
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterDept, setFilterDept] = useState("ALL");
+  const [sortNewest, setSortNewest] = useState(true);
+  const { lastUpdate } = useLiveUpdate();
 
   // ✅ Fetch completed reports (System role)
   const fetchReports = useCallback(async () => {
     try {
       const res = await getCompletedReports();
-      setReports(res.data.data || []);
+      const data = res.data.data || [];
+      // Sort newest first by default
+      const sorted = data.sort(
+        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+      );
+      setReports(sorted);
+      setFilteredReports(sorted);
     } catch (err) {
       console.error("❌ Error fetching completed reports:", err);
     } finally {
@@ -35,27 +52,59 @@ const SystemCompletedReports = () => {
   // ✅ Auto-refresh when System or Global WebSocket event arrives
   useEffect(() => {
     if (!lastUpdate?.data) return;
-
     const { type, data } = lastUpdate;
     const updateType = (type || "").toLowerCase();
-
     if (["system", "all", "manual"].includes(updateType)) {
       console.log("🔁 Live update detected in Completed Reports:", data.title);
       fetchReports();
     }
   }, [lastUpdate, fetchReports]);
 
-  // ✅ Date formatting helpers
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr);
-    return d.toLocaleString("en-GB", {
+  // ✅ Handle Search + Filter + Sort
+  useEffect(() => {
+    let result = [...reports];
+
+    // 🔍 Search
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (r) =>
+          r.title.toLowerCase().includes(term) ||
+          r.department.toLowerCase().includes(term) ||
+          r.createdByName.toLowerCase().includes(term)
+      );
+    }
+
+    // 🏫 Filter by Department
+    if (filterDept !== "ALL") {
+      result = result.filter((r) => r.department === filterDept);
+    }
+
+    // ⏫ Sort (Newest or Oldest)
+    result.sort((a, b) =>
+      sortNewest
+        ? new Date(b.updatedAt) - new Date(a.updatedAt)
+        : new Date(a.updatedAt) - new Date(b.updatedAt)
+    );
+
+    setFilteredReports(result);
+  }, [searchTerm, filterDept, sortNewest, reports]);
+
+  // ✅ Unique departments for filter dropdown
+  const departments = useMemo(
+    () => ["ALL", ...new Set(reports.map((r) => r.department).filter(Boolean))],
+    [reports]
+  );
+
+  // ✅ Date formatting
+  const formatDate = (dateStr) =>
+    new Date(dateStr).toLocaleString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
   const daysAgo = (dateStr) => {
     const created = new Date(dateStr);
@@ -66,7 +115,6 @@ const SystemCompletedReports = () => {
     return `Completed ${diff} days ago`;
   };
 
-  // ✅ Role formatting (for report history)
   const formatRole = (role) => {
     if (!role) return "User";
     if (role.includes("SYSTEM")) return "System";
@@ -131,7 +179,7 @@ const SystemCompletedReports = () => {
     }
   };
 
-  // ✅ PDF Download Generator
+  // ✅ PDF Download
   const downloadPDF = (report) => {
     const doc = new jsPDF("p", "mm", "a4");
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -139,13 +187,17 @@ const SystemCompletedReports = () => {
     doc.addImage(logo, "PNG", 15, 10, 25, 25);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("New Horizon College of Engineering", pageWidth / 2, 18, { align: "center" });
-
+    doc.text("New Horizon College of Engineering", pageWidth / 2, 18, {
+      align: "center",
+    });
     doc.setFontSize(11);
-    doc.text("System & Network Department", pageWidth / 2, 25, { align: "center" });
-
+    doc.text("System & Network Department", pageWidth / 2, 25, {
+      align: "center",
+    });
     doc.setFontSize(10);
-    doc.text("Official Completed Report Summary", pageWidth / 2, 31, { align: "center" });
+    doc.text("Official Completed Report Summary", pageWidth / 2, 31, {
+      align: "center",
+    });
 
     doc.setDrawColor(22, 163, 74);
     doc.line(14, 36, pageWidth - 14, 36);
@@ -173,7 +225,6 @@ const SystemCompletedReports = () => {
     });
 
     y = doc.lastAutoTable.finalY + 6;
-
     doc.setFont("helvetica", "bold");
     doc.text("Action History", 14, y);
     y += 4;
@@ -205,15 +256,54 @@ const SystemCompletedReports = () => {
           Completed Reports
         </h1>
 
+        {/* 🔍 Search & Filter Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-72">
+              <FaSearch className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search reports..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#16a34a] outline-none"
+              />
+            </div>
+            <button
+              onClick={() => setSortNewest(!sortNewest)}
+              className="flex items-center gap-2 bg-white border border-gray-300 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100"
+              title="Toggle Sort Order"
+            >
+              <FaSortAmountDownAlt />
+              {sortNewest ? "Newest" : "Oldest"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <FaFilter className="text-gray-400" />
+            <select
+              value={filterDept}
+              onChange={(e) => setFilterDept(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#16a34a] outline-none"
+            >
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept === "ALL" ? "All Departments" : dept}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {!selected ? (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            {reports.length === 0 ? (
+            {filteredReports.length === 0 ? (
               <div className="text-center text-gray-500 font-medium mt-10">
-                No completed reports yet.
+                No completed reports found.
               </div>
             ) : (
               <div className="overflow-x-auto bg-white rounded-2xl shadow border border-gray-200">
@@ -229,7 +319,7 @@ const SystemCompletedReports = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {reports.map((r) => (
+                    {filteredReports.map((r) => (
                       <tr
                         key={r.id}
                         className="border-t hover:bg-gray-50 cursor-pointer"
@@ -287,7 +377,9 @@ const SystemCompletedReports = () => {
             </div>
 
             <div className="bg-gray-50 p-4 rounded-xl border mb-6">
-              <p className="text-gray-800 leading-relaxed text-lg">{selected.description}</p>
+              <p className="text-gray-800 leading-relaxed text-lg">
+                {selected.description}
+              </p>
             </div>
 
             <ReportProgress
